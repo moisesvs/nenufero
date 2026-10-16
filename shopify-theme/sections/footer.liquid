@@ -1,0 +1,21 @@
+<footer class="site-footer" id="contacto">
+  <div class="footer-top"><a class="wordmark brand-lockup footer-wordmark" href="{{ routes.root_url }}"><img class="brand-symbol" src="{{ 'nenufero-logo.png' | asset_url }}" alt=""><span class="wordmark-name">{{ shop.name | escape }}</span></a><p>{{ section.settings.tagline | newline_to_br }}</p><a class="footer-cta" href="https://wa.me/{{ settings.whatsapp_phone | remove: '+' | remove: ' ' | remove: '-' | remove: '(' | remove: ')' }}" target="_blank" rel="noopener">Hablemos de lo que imaginas <span>↗</span></a></div>
+  <div class="footer-bottom">
+    <div><span class="footer-label">VEN A VERNOS</span><a href="{{ section.settings.maps_url }}" target="_blank" rel="noopener">{{ section.settings.address | newline_to_br }} <span aria-hidden="true">↗</span></a></div>
+    <div><span class="footer-label">HORARIO</span><p>{{ section.settings.hours | newline_to_br }}</p></div>
+    <div><span class="footer-label">CONTACTO</span><a href="tel:{{ settings.whatsapp_phone | remove: ' ' | remove: '-' | remove: '(' | remove: ')' }}">{{ settings.whatsapp_phone }}</a></div>
+    <div class="footer-legal"><span class="footer-label">INFORMACIÓN</span>{% if shop.privacy_policy.url != blank %}<a href="{{ shop.privacy_policy.url }}">Privacidad</a>{% endif %}{% if shop.terms_of_service.url != blank %}<a href="{{ shop.terms_of_service.url }}">Condiciones</a>{% endif %}{% if shop.refund_policy.url != blank %}<a href="{{ shop.refund_policy.url }}">Devoluciones</a>{% endif %}{% if shop.shipping_policy.url != blank %}<a href="{{ shop.shipping_policy.url }}">Envíos</a>{% endif %}</div>
+  </div>
+  <div class="footer-copy">© {{ 'now' | date: '%Y' }} {{ shop.name | escape }} · Diseñado y producido en Madrid.</div>
+</footer>
+{% schema %}
+{
+  "name":"Pie de página Nenufero",
+  "settings":[
+    {"type":"textarea","id":"tagline","label":"Frase de marca","default":"Ideas que se ven.\nMarcas que se recuerdan."},
+    {"type":"textarea","id":"address","label":"Dirección","default":"Calle La del Manojo de Rosas 81\n28041 Madrid"},
+    {"type":"textarea","id":"hours","label":"Horario","default":"Lunes a viernes, 10:00 a 20:00\nSábado, 10:00 a 14:00"},
+    {"type":"url","id":"maps_url","label":"Enlace a mapas"}
+  ]
+}
+{% endschema %}

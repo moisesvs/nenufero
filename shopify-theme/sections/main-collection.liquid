@@ -1,0 +1,24 @@
+<section class="collection-page section-shell">
+  <nav class="breadcrumbs" aria-label="Ruta"><a href="{{ routes.root_url }}">Inicio</a><span>/</span><span aria-current="page">{{ collection.title | escape }}</span></nav>
+  <header class="collection-heading"><p class="eyebrow">COLECCIÓN NENUFERO</p><h1>{{ collection.title | escape }}</h1>{% if collection.description != blank %}<div class="collection-description rte">{{ collection.description }}</div>{% endif %}</header>
+  <form class="collection-controls" action="{{ collection.url }}" method="get">
+    <div class="filter-groups">
+      {% for filter in collection.filters %}
+        {% if filter.type == 'list' or filter.type == 'boolean' or filter.type == 'price_range' %}
+          <details class="filter-group"><summary>{{ filter.label | escape }}{% if filter.active_values.size > 0 or filter.min_value.value != nil or filter.max_value.value != nil %}<span class="filter-active-count">{% if filter.type == 'price_range' %}1{% else %}{{ filter.active_values.size }}{% endif %}</span>{% endif %}<span aria-hidden="true">+</span></summary><div class="filter-options">
+            {% if filter.type == 'list' %}{% for value in filter.values %}<label class="filter-option"><input type="checkbox" name="{{ value.param_name }}" value="{{ value.value | escape }}"{% if value.active %} checked{% endif %}{% if value.count == 0 and value.active == false %} disabled{% endif %}><span>{{ value.label | escape }} <small>({{ value.count }})</small></span></label>{% endfor %}
+            {% elsif filter.type == 'boolean' %}<label class="filter-option"><input type="checkbox" name="{{ filter.param_name }}" value="{{ filter.true_value.value }}"{% if filter.true_value.active %} checked{% endif %}{% if filter.true_value.count == 0 and filter.true_value.active == false %} disabled{% endif %}><span>{{ filter.true_value.label | escape }} <small>({{ filter.true_value.count }})</small></span></label>
+            {% else %}<div class="filter-price-range"><label for="FilterMin-{{ section.id }}">Desde {{ cart.currency.symbol }}<input id="FilterMin-{{ section.id }}" type="number" name="{{ filter.min_value.param_name }}" min="0" max="{{ filter.range_max | divided_by: 100.0 }}" step="0.01"{% if filter.min_value.value %} value="{{ filter.min_value.value | divided_by: 100.0 }}"{% endif %}></label><label for="FilterMax-{{ section.id }}">Hasta {{ cart.currency.symbol }}<input id="FilterMax-{{ section.id }}" type="number" name="{{ filter.max_value.param_name }}" min="0" max="{{ filter.range_max | divided_by: 100.0 }}" step="0.01"{% if filter.max_value.value %} value="{{ filter.max_value.value | divided_by: 100.0 }}"{% endif %}></label></div>{% endif %}
+          </div></details>
+        {% endif %}
+      {% endfor %}
+    </div>
+    <label class="sort-control" for="SortBy-{{ section.id }}">Ordenar por<select id="SortBy-{{ section.id }}" name="sort_by" data-sort-by>{% assign current_sort = collection.sort_by | default: collection.default_sort_by %}{% for option in collection.sort_options %}<option value="{{ option.value }}"{% if option.value == current_sort %} selected{% endif %}>{{ option.name | escape }}</option>{% endfor %}</select></label>
+    <button class="button filter-apply" type="submit">{% if collection.filters.size > 0 %}Aplicar filtros{% else %}Ordenar{% endif %}</button>
+    {% assign has_active_filters = false %}{% for filter in collection.filters %}{% if filter.active_values.size > 0 or filter.min_value.value != nil or filter.max_value.value != nil %}{% assign has_active_filters = true %}{% endif %}{% endfor %}{% if has_active_filters %}<a class="clear-filters" href="{{ collection.url }}?sort_by={{ current_sort }}">Limpiar filtros</a>{% endif %}
+  </form>
+  {% paginate collection.products by section.settings.products_per_page %}<div class="collection-result-count">{{ collection.products_count }} productos</div><div class="product-grid">{% for product in collection.products %}{% render 'product-card', product: product %}{% else %}<div class="empty-products"><h2>Aún no hay productos en esta colección.</h2><a class="text-link" href="{{ routes.all_products_collection_url }}">Ver toda la tienda ↗</a></div>{% endfor %}</div>{% if paginate.pages > 1 %}<nav class="pagination" aria-label="Paginación">{% if paginate.previous %}<a href="{{ paginate.previous.url }}" aria-label="Página anterior">← Anterior</a>{% endif %}<span>{{ paginate.current_page }} / {{ paginate.pages }}</span>{% if paginate.next %}<a href="{{ paginate.next.url }}" aria-label="Página siguiente">Siguiente →</a>{% endif %}</nav>{% endif %}{% endpaginate %}
+</section>
+{% schema %}
+{"name":"Colección","settings":[{"type":"range","id":"products_per_page","label":"Productos por página","min":8,"max":24,"step":4,"default":12}],"presets":[{"name":"Colección"}]}
+{% endschema %}

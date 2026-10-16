@@ -1,0 +1,19 @@
+{% assign hero_primary_url = section.settings.primary_link %}{% if hero_primary_url == blank %}{% assign hero_primary_url = routes.root_url | append: '#contacto' %}{% endif %}{% assign hero_secondary_url = section.settings.secondary_link | default: routes.all_products_collection_url %}
+<section class="hero section-shell">
+  <div class="hero-copy"><p class="eyebrow"><span class="status-dot"></span>{{ section.settings.kicker | escape }}</p><h1>{{ section.settings.heading | escape | newline_to_br }}</h1><div class="hero-intro">{{ section.settings.copy }}</div><div class="hero-actions"><a class="button button-dark" href="{{ hero_primary_url }}">{{ section.settings.primary_label | escape }} <span aria-hidden="true">↗</span></a><a class="text-link" href="{{ hero_secondary_url }}">{{ section.settings.secondary_label | escape }} <span aria-hidden="true">↓</span></a></div><div class="hero-proof"><span class="proof-mark"><img src="{{ 'nenufero-logo.png' | asset_url }}" alt=""></span><p>{{ section.settings.proof | newline_to_br }}</p><span class="proof-divider"></span><p class="proof-location">Villaverde<br>Madrid, España</p></div></div>
+  <div class="hero-visual">{% if section.settings.image != blank %}{{ section.settings.image | image_url: width: 1600 | image_tag: widths: '600, 900, 1200, 1600', sizes: '(min-width: 800px) 52vw, 100vw', loading: 'eager', fetchpriority: 'high', alt: section.settings.image.alt }}{% else %}<img src="{{ 'hero-workshop.png' | asset_url }}" alt="" width="1536" height="1024" fetchpriority="high">{% endif %}<div class="image-label"><span>{{ section.settings.image_caption | escape }}</span><span>ESTUDIO DE IMPRESIÓN</span></div><div class="image-note"><span class="note-star">✳</span><span>Una idea tuya.<br>Manos expertas aquí.</span></div></div>
+</section>
+{% schema %}
+{"name":"Portada Nenufero","settings":[
+  {"type":"text","id":"kicker","label":"Texto introductorio","default":"Ideas que se ven. Marcas que se recuerdan."},
+  {"type":"textarea","id":"heading","label":"Titular","default":"Tu marca,\nen todas partes."},
+  {"type":"richtext","id":"copy","label":"Descripción","default":"<p>Rotulación, impresión y personalización para negocios que quieren hacerse notar. Diseñado y producido en Madrid.</p>"},
+  {"type":"text","id":"primary_label","label":"Botón principal","default":"Cuéntanos tu proyecto"},
+  {"type":"url","id":"primary_link","label":"Enlace principal"},
+  {"type":"text","id":"secondary_label","label":"Botón secundario","default":"Ver colección propia"},
+  {"type":"url","id":"secondary_link","label":"Enlace secundario"},
+  {"type":"textarea","id":"proof","label":"Texto de confianza","default":"Un solo equipo para hacer visible\ntodo lo que tienes entre manos."},
+  {"type":"image_picker","id":"image","label":"Imagen de portada"},
+  {"type":"text","id":"image_caption","label":"Pie de imagen","default":"01 / ROTULACIÓN"}
+],"presets":[{"name":"Portada Nenufero"}]}
+{% endschema %}

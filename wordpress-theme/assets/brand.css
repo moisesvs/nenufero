@@ -1,0 +1,26 @@
+/* Logotipo oficial de Nenufero, suministrado por la empresa. */
+.brand-lockup{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.brand-symbol{display:block;width:36px;height:33px;flex:0 0 auto;object-fit:contain}
+.wordmark-name{display:inline-block;color:inherit;font:inherit;line-height:1;letter-spacing:inherit}
+.footer-wordmark .brand-symbol{width:44px;height:40px}
+.footer-wordmark .wordmark-name{font-size:31px}
+.error-mark{margin-bottom:26px}
+.proof-mark{background:transparent!important;border:0!important;border-radius:0!important}
+.proof-mark img{display:block;width:100%;height:100%;object-fit:contain}
+.art-word{left:20%;top:43%;width:55px;height:50px;font-size:0}
+.art-word img{display:block;width:100%;height:100%;object-fit:contain}
+.paper-stack i:nth-child(3):after{content:none}
+.print-logo{position:absolute;z-index:2;right:12px;bottom:7px;width:35px;height:32px}
+.print-logo img{display:block;width:100%;height:100%;object-fit:contain}
+.thread-shape img{display:block;width:58px;height:53px;object-fit:contain}
+.screen-card .brand-symbol{width:58px;height:53px}
+.product-sticker{width:65px;height:65px;padding:4px;background:#f6f4ef;color:#181916}
+.product-sticker img{display:block;width:39px;height:35px;margin:0 auto;object-fit:contain}
+.review-mark{display:block;width:27px;height:25px;margin-left:auto;object-fit:contain}
+.empty-icon{border:0!important;background:transparent!important}
+.empty-icon img{display:block;width:100%;height:100%;object-fit:contain}
+.product-placeholder img{display:block;width:70px;height:64px;object-fit:contain}
+.product-placeholder-large img{width:110px;height:100px}
+.service-art-mark{font-size:0!important;line-height:0!important}
+.service-art-mark img{display:block;width:60px;height:55px;object-fit:contain}
+@media(max-width:680px){.brand-lockup{gap:6px}.brand-symbol{width:32px;height:29px}.footer-wordmark .brand-symbol{width:36px;height:33px}.footer-wordmark .wordmark-name{font-size:25px}.art-word{width:43px;height:39px}.product-sticker{width:56px;height:56px}.product-sticker img{width:33px;height:30px}.service-art-mark img{width:44px;height:40px}}

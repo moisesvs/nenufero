@@ -1,0 +1,4 @@
+<section class="manifesto"><div class="manifesto-inner"><p class="eyebrow">{{ section.settings.kicker | escape }}</p><h2 class="word-reveal">{% assign words = section.settings.heading | split: ' ' %}{% for word in words %}<span class="word-step">{{ word | escape }}</span>{% unless forloop.last %} {% endunless %}{% endfor %}</h2><p class="manifesto-foot">{{ section.settings.note | escape }}</p></div></section>
+{% schema %}
+{"name":"Manifiesto","settings":[{"type":"text","id":"kicker","label":"Introducción","default":"Nenufero, en pocas palabras"},{"type":"text","id":"heading","label":"Frase","default":"Hacemos que las buenas ideas se vean, se toquen y se queden."},{"type":"text","id":"note","label":"Cierre","default":"Diseño y producción, en el mismo equipo."}],"presets":[{"name":"Manifiesto"}]}
+{% endschema %}

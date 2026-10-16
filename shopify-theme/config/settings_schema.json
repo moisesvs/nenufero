@@ -1,0 +1,18 @@
+[
+  {"name":"theme_info","theme_name":"Nenufero","theme_author":"Nenufero","theme_version":"1.0.0","theme_documentation_url":"https://shopify.dev/docs/storefronts/themes","theme_support_url":"https://help.shopify.com/"},
+  {"name":"Marca","settings":[
+    {"type":"image_picker","id":"logo","label":"Logotipo"},
+    {"type":"range","id":"logo_width","label":"Ancho del logotipo","min":80,"max":240,"step":10,"unit":"px","default":150},
+    {"type":"image_picker","id":"favicon","label":"Favicon"},
+    {"type":"text","id":"whatsapp_phone","label":"Teléfono de contacto","default":"+34 673 629 342"}
+  ]},
+  {"name":"Tipografía","settings":[
+    {"type":"font_picker","id":"type_body_font","label":"Tipografía principal","default":"manrope_n4"}
+  ]},
+  {"name":"Colores","settings":[
+    {"type":"color","id":"color_paper","label":"Fondo","default":"#f6f4ef"},
+    {"type":"color","id":"color_ink","label":"Texto","default":"#181916"},
+    {"type":"color","id":"color_blue","label":"Acento","default":"#1747db"},
+    {"type":"color","id":"color_line","label":"Divisores","default":"#dcdad3"}
+  ]}
+]

@@ -1,0 +1,1 @@
+<?php get_header(); ?><main id="contenido" class="section-wrap" style="padding-top:5rem;padding-bottom:5rem"><?php while ( have_posts() ) : the_post(); ?><article <?php post_class(); ?>><p class="eyebrow">Nenufero / información</p><h1><?php the_title(); ?></h1><div class="page-content"><?php the_content(); ?></div></article><?php endwhile; ?></main><?php get_footer(); ?>

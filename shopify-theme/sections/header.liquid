@@ -1,0 +1,20 @@
+<div class="announcement"><span>{{ section.settings.announcement }}</span><a href="{{ routes.root_url }}#contacto">Hablemos de tu proyecto <span aria-hidden="true">↗</span></a></div>
+<header class="site-header" data-site-header>
+  <a class="wordmark brand-lockup" href="{{ routes.root_url }}" aria-label="{{ shop.name }} · inicio">
+    {% if settings.logo != blank %}{{ settings.logo | image_url: width: settings.logo_width | image_tag: class: 'wordmark-logo', widths: '120, 180, 240', alt: shop.name }}{% else %}<img class="brand-symbol" src="{{ 'nenufero-logo.png' | asset_url }}" alt=""><span class="wordmark-name">{{ shop.name | escape }}</span>{% endif %}
+  </a>
+  <button class="menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="PrimaryNav"><span></span><span></span></button>
+  <nav class="main-nav" id="PrimaryNav" aria-label="Navegación principal">
+    {% if section.settings.menu != blank and section.settings.menu.links.size > 0 %}{% for link in section.settings.menu.links %}<a href="{{ link.url }}"{% if link.active %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>{% endfor %}{% else %}<a href="{{ routes.root_url }}">Inicio</a><a href="{{ routes.root_url }}#servicios">Servicios</a><a href="{{ routes.all_products_collection_url }}">Tienda</a><a href="{{ routes.root_url }}#proceso">Cómo trabajamos</a><a href="{{ routes.root_url }}#contacto">Contacto</a>{% endif %}
+  </nav>
+  <button class="bag-button" type="button" data-cart-open aria-label="Abrir carrito, {{ cart.item_count }} productos"><span>Mi pedido</span><span class="bag-count" data-cart-count>{{ cart.item_count }}</span></button>
+</header>
+{% schema %}
+{
+  "name": "Cabecera Nenufero",
+  "settings": [
+    {"type":"text","id":"announcement","label":"Mensaje superior","default":"Estudio de impresión y rotulación en Madrid"},
+    {"type":"link_list","id":"menu","label":"Menú principal","default":"main-menu"}
+  ]
+}
+{% endschema %}
