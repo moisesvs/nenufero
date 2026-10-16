@@ -3,7 +3,7 @@
 .brand-symbol{display:block;width:36px;height:33px;flex:0 0 auto;object-fit:contain}
 .wordmark-name{display:inline-block;color:inherit;font:inherit;line-height:1;letter-spacing:inherit}
 .site-header .brand-symbol{width:52px;height:48px}
-.site-header .wordmark-name{font-size:12px}
+.site-header .wordmark-name{font-size:15px}
 .footer-wordmark .brand-symbol{width:44px;height:40px}
 .footer-wordmark .wordmark-name{font-size:31px}
 .error-mark{margin-bottom:26px}
@@ -25,4 +25,4 @@
 .product-placeholder-large img{width:110px;height:100px}
 .service-art-mark{font-size:0!important;line-height:0!important}
 .service-art-mark img{display:block;width:60px;height:55px;object-fit:contain}
-@media(max-width:680px){.brand-lockup{gap:6px}.brand-symbol{width:32px;height:29px}.site-header .brand-symbol{width:44px;height:40px}.site-header .wordmark-name{font-size:11px}.footer-wordmark .brand-symbol{width:36px;height:33px}.footer-wordmark .wordmark-name{font-size:25px}.art-word{width:43px;height:39px}.product-sticker{width:56px;height:56px}.product-sticker img{width:33px;height:30px}.service-art-mark img{width:44px;height:40px}}
+@media(max-width:680px){.brand-lockup{gap:6px}.brand-symbol{width:32px;height:29px}.site-header .brand-symbol{width:44px;height:40px}.site-header .wordmark-name{font-size:14px}.footer-wordmark .brand-symbol{width:36px;height:33px}.footer-wordmark .wordmark-name{font-size:25px}.art-word{width:43px;height:39px}.product-sticker{width:56px;height:56px}.product-sticker img{width:33px;height:30px}.service-art-mark img{width:44px;height:40px}}
