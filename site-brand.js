@@ -7,14 +7,16 @@
     intro: "Rotulación, impresión y personalización para negocios que quieren hacerse notar. Diseñado y producido en Madrid.",
     logo: "",
     services: [
-      { title: "Rotulación", tag: "01 / EN LA CALLE", description: "Vehículos, escaparates y espacios que trabajan para ti incluso cuando tú no estás.", href: "tienda/rotulos-luminosos.html" },
-      { title: "Impresión", tag: "02 / TINTA Y PAPEL", description: "Tarjetas, folletos y gran formato con un acabado que se nota.", href: "tienda/gran-formato.html" },
-      { title: "Textil y UVI", tag: "03 / A TU MANERA", description: "Ropa de trabajo, prendas para tu marca y objetos personalizados.", href: "tienda/personalizados.html" },
-      { title: "Presencia digital", tag: "04 / TAMBIÉN EN LÍNEA", description: "Una identidad clara para que tu negocio se entienda también en pantalla.", href: "tienda/proyecto-a-medida.html" }
+      { title: "Rotulación y rótulos", tag: "01 / EN LA CALLE", description: "Vehículos, escaparates y espacios que trabajan para ti incluso cuando tú no estás.", href: "tienda/rotulos-luminosos.html" },
+      { title: "Textil y objetos", tag: "02 / A TU MANERA", description: "Camisetas, tazas y artículos personalizados para tu marca.", href: "tienda/personalizados.html" },
+      { title: "Gran formato y vinilo", tag: "03 / TINTA A LO GRANDE", description: "Vinilos, lonas y gráficas para escaparates, espacios y eventos.", href: "tienda/gran-formato.html" },
+      { title: "PVC, metacrilato y láser", tag: "04 / CORTE Y FRESADO", description: "Piezas a medida, corte láser y fresado para dar forma a tu proyecto.", href: "tienda/pvc-metacrilato.html" }
     ],
     slides: [
-      { image: "", title: "01 / EL TALLER", caption: "HECHO EN MADRID" },
-      { image: "", title: "02 / TEXTIL PERSONALIZADO", caption: "HECHO A TU MEDIDA" }
+      { image: "", title: "01 / ROTULACIÓN Y RÓTULOS", caption: "DISEÑO · FABRICACIÓN · MONTAJE" },
+      { image: "", title: "02 / TEXTIL Y OBJETOS", caption: "CAMISETAS · TAZAS · REGALOS" },
+      { image: "", title: "03 / GRAN FORMATO", caption: "VINILOS · LONAS · GRÁFICA" },
+      { image: "", title: "04 / MATERIALES Y CORTE", caption: "PVC · METACRILATO · LÁSER" }
     ]
   };
 
@@ -55,8 +57,16 @@
   document.querySelectorAll("[data-gallery-slide]").forEach((slide, index) => {
     const setting = settings.slides[index];
     if (!setting) return;
-    const image = slide.querySelector("img");
-    if (setting.image) image.src = setting.image;
+    const image = slide.querySelector("[data-gallery-image]") || slide.querySelector("img");
+    const art = slide.querySelector(".gallery-art");
+    if (setting.image && image) {
+      image.src = setting.image;
+      image.hidden = false;
+      if (art) art.hidden = true;
+    } else if (art && slide.querySelector("[data-gallery-image]")) {
+      image.hidden = true;
+      art.hidden = false;
+    }
     const labels = slide.querySelectorAll(".image-label span");
     if (labels[0]) labels[0].textContent = setting.title;
     if (labels[1]) labels[1].textContent = setting.caption;

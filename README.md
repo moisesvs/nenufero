@@ -2,7 +2,7 @@
 
 Propuesta de tienda y experiencia de compra para revisión en localhost. No publica cambios en la web de Nenufero.
 
-Desde el enlace **Personalizar la propuesta** del pie de página puedes cambiar el logotipo, el nombre, los textos principales, las dos imágenes destacadas y las cuatro actividades de la portada. Esos cambios se guardan solo en el navegador actual; el editor sirve para preparar y presentar una variante local, no sustituye a un CMS ni publica cambios en internet.
+Desde el enlace **Personalizar la propuesta** del pie de página puedes cambiar el logotipo, el nombre, los textos principales, las cuatro imágenes de la galería de servicios y las cuatro actividades de la portada. Esos cambios se guardan solo en el navegador actual; el editor sirve para preparar y presentar una variante local, no sustituye a un CMS ni publica cambios en internet.
 
 ## Arranque
 

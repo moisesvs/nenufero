@@ -15,7 +15,7 @@ const routes = [
   ["tienda/corte-laser.html", "Corte láser"],
   ["tienda/proyecto-a-medida.html", "Proyecto a medida"]
 ];
-const defaultSlideImages = ["public/assets/taller-nenufero.png", "public/assets/camiseta-azul.png"];
+const defaultSlideImages = ["public/assets/taller-nenufero.png", "public/assets/camiseta-azul.png", "", ""];
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
@@ -34,7 +34,7 @@ function renderFields() {
   slideFields.innerHTML = settings.slides.map((slide, index) => `
     <article class="slide-editor-card" data-slide-card="${index}">
       <h3>Imagen destacada 0${index + 1}</h3>
-      <img class="slide-preview" data-slide-preview="${index}" src="${slide.image || defaultSlideImages[index]}" alt="Vista previa de la imagen destacada ${index + 1}">
+      ${slide.image || defaultSlideImages[index] ? `<img class="slide-preview" data-slide-preview="${index}" src="${slide.image || defaultSlideImages[index]}" alt="Vista previa de la imagen destacada ${index + 1}">` : `<div class="slide-preview slide-preview-placeholder" data-slide-preview="${index}">Vista gráfica para ${escapeHtml(slide.title.split("/").slice(1).join("/").trim())}<br><small>Sube una foto para sustituir esta composición</small></div>`}
       <label>Imagen JPG, PNG o WEBP<input type="file" data-slide-file="${index}" accept="image/jpeg,image/png,image/webp"></label>
       <label>Título de la imagen<input name="slide-title-${index}" value="${escapeHtml(slide.title)}" maxlength="52" required></label>
       <label>Pie de foto<input name="slide-caption-${index}" value="${escapeHtml(slide.caption)}" maxlength="48" required></label>
@@ -105,7 +105,16 @@ form.addEventListener("change", async (event) => {
     } else if (slideInput?.files?.[0]) {
       const index = Number(slideInput.dataset.slideFile);
       settings.slides[index].image = await readFile(slideInput.files[0], 1500);
-      document.querySelector(`[data-slide-preview="${index}"]`).src = settings.slides[index].image;
+      let preview = document.querySelector(`[data-slide-preview="${index}"]`);
+      if (preview.tagName !== "IMG") {
+        const image = document.createElement("img");
+        image.className = "slide-preview";
+        image.dataset.slidePreview = String(index);
+        image.alt = `Vista previa de la imagen destacada ${index + 1}`;
+        preview.replaceWith(image);
+        preview = image;
+      }
+      preview.src = settings.slides[index].image;
       setStatus(`Imagen ${index + 1} optimizada. Guarda los cambios para aplicarla a la portada.`);
     }
   } catch (error) {
@@ -119,7 +128,16 @@ slideFields.addEventListener("click", (event) => {
   if (!button) return;
   const index = Number(button.dataset.clearSlide);
   settings.slides[index].image = "";
-  document.querySelector(`[data-slide-preview="${index}"]`).src = defaultSlideImages[index];
+  const preview = document.querySelector(`[data-slide-preview="${index}"]`);
+  if (defaultSlideImages[index]) {
+    preview.src = defaultSlideImages[index];
+  } else {
+    const placeholder = document.createElement("div");
+    placeholder.className = "slide-preview slide-preview-placeholder";
+    placeholder.dataset.slidePreview = String(index);
+    placeholder.innerHTML = `Vista gráfica para ${escapeHtml(settings.slides[index].title.split("/").slice(1).join("/").trim())}<br><small>Sube una foto para sustituir esta composición</small>`;
+    preview.replaceWith(placeholder);
+  }
   const input = document.querySelector(`[data-slide-file="${index}"]`);
   if (input) input.value = "";
   setStatus(`La imagen ${index + 1} volverá a la propuesta inicial al guardar.`);
