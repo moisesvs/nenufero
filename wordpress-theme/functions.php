@@ -22,7 +22,7 @@ add_action( 'wp_enqueue_scripts', 'nenufero_assets' );
 function nenufero_customize( $wp_customize ) {
 	$wp_customize->add_section( 'nenufero_brand', array( 'title' => __( 'Nenufero: datos del sitio', 'nenufero-estudio' ), 'priority' => 35 ) );
 	$settings = array(
-		'nenufero_shop_url' => array( 'Tienda Shopify', 'https://nfnenufero.shop' ),
+		'nenufero_shop_url' => array( 'URL de la tienda online', home_url( '/tienda/' ) ),
 		'nenufero_whatsapp_phone' => array( 'WhatsApp (formato internacional, solo números)', '34673629342' ),
 	);
 	foreach ( $settings as $id => $data ) {

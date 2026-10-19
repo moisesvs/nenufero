@@ -34,8 +34,10 @@
 .store-spotlight-copy>span:last-child{font-size:10px;color:#686961}
 .store-spotlight-link{display:flex;align-items:center;gap:20px;color:var(--blue);font-size:10px;font-weight:700;white-space:nowrap}
 .store-spotlight-link b{font-size:17px}
+.header-cart-link{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;font-size:9px;font-weight:700}
+.header-cart-link b{display:grid;min-width:23px;height:23px;padding:0 5px;place-items:center;border-radius:50%;background:#e6eaf5;color:var(--blue);font-size:8px}
 @media(min-width:681px) and (max-width:900px){.site-header{padding-left:4vw;padding-right:4vw}.main-nav{gap:18px;margin-left:15px}.main-nav a{font-size:10px}.header-store-link{min-height:38px;padding:0 10px;gap:7px;font-size:9px}}
-@media(max-width:680px){.header-store-link{position:absolute;right:5vw;min-height:35px;padding:0 9px;gap:6px;font-size:8px}.header-store-link span:last-child{font-size:13px}.menu-toggle{right:145px}.store-spotlight{margin-top:25px;padding:17px 15px;align-items:flex-start;flex-direction:column;gap:12px}.store-spotlight-copy strong{font-size:16px}.store-spotlight-copy>span:last-child{font-size:9px}.store-spotlight-link{font-size:9px;gap:11px}}
+@media(max-width:680px){.header-store-link{position:absolute;right:calc(5vw + 38px);min-height:35px;padding:0 9px;gap:6px;font-size:8px}.header-store-link span:last-child{font-size:13px}.header-cart-link{position:absolute;right:5vw}.header-cart-link>span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}.menu-toggle{right:145px}.store-spotlight{margin-top:25px;padding:17px 15px;align-items:flex-start;flex-direction:column;gap:12px}.store-spotlight-copy strong{font-size:16px}.store-spotlight-copy>span:last-child{font-size:9px}.store-spotlight-link{font-size:9px;gap:11px}}
 .word-step{display:inline-block;color:rgba(246,244,239,.3);transition:color 1s var(--spring)}.word-step.is-on{color:#f6f4ef}
 @media(prefers-reduced-motion:reduce){.word-step{color:#f6f4ef}}
 .review-mark{margin-left:auto;color:#8da8ff;font-size:13px;font-weight:700;letter-spacing:-.06em}

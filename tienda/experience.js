@@ -12,7 +12,7 @@ const journeys = {
     ], description:"Añade una nota sobre color, colocación del diseño o fecha deseada."
   },
   rotulos: {
-    kind: "service", title: "Rótulos luminosos a medida", kicker: "Fachadas · escaparates · interiores", category: "Rótulos luminosos", heading: "Una marca que\nse ve de día y de noche.", intro: "Cuéntanos cómo es tu espacio y qué quieres comunicar. Diseñamos rótulos luminosos para que encajen con tu negocio y su entorno.", visual: "sign", visualLabel: "DISEÑO, FABRICACIÓN E INSTALACIÓN", promise: "La instalación y los materiales se concretan tras revisar el espacio.", fields: [
+    kind: "quote", title: "Rótulos luminosos a medida", kicker: "Fachadas · escaparates · interiores", category: "Rótulos luminosos", heading: "Una marca que\nse ve de día y de noche.", intro: "Cuéntanos cómo es tu espacio y qué quieres comunicar. Diseñamos rótulos luminosos para que encajen con tu negocio y su entorno.", visual: "sign", visualLabel: "DISEÑO, FABRICACIÓN E INSTALACIÓN", promise: "La instalación y los materiales se concretan tras revisar el espacio.", fields: [
       {name:"sign", label:"Tipo de rótulo", type:"select", options:["Letras corpóreas iluminadas", "Caja de luz", "Rótulo retroiluminado", "Todavía no lo sé"]},
       {name:"width", label:"Ancho aproximado · cm", type:"number", min:1, placeholder:"120"},
       {name:"height", label:"Alto aproximado · cm", type:"number", min:1, placeholder:"60"},
@@ -23,8 +23,8 @@ const journeys = {
   granformato: {
     kind: "product", title: "Impresión de gran formato", kicker: "Vinilo impreso · lonas · escaparates", category: "Gran formato", heading: "Haz que te vean\na lo grande.", intro: "Prepara vinilos, lonas y gráficas de gran formato para tu negocio, evento o espacio. Dinos el tamaño y dónde se va a colocar.", visual: "format", visualLabel: "GRÁFICA PREPARADA PARA TU ESPACIO", promise: "El soporte y el acabado se confirman según el uso y la superficie.", fields: [
       {name:"support", label:"¿Qué necesitas imprimir?", type:"select", options:["Lona", "Vinilo impreso", "Vinilo para escaparate", "Póster gran formato", "Necesito consejo"]},
-      {name:"width", label:"Ancho · cm", type:"number", min:1, placeholder:"200"},
-      {name:"height", label:"Alto · cm", type:"number", min:1, placeholder:"100"},
+      {name:"width", label:"Ancho · cm", type:"number", min:1, placeholder:"200", required:true},
+      {name:"height", label:"Alto · cm", type:"number", min:1, placeholder:"100", required:true},
       {name:"quantity", label:"Unidades", type:"number", min:1, value:1},
       {name:"finish", label:"Acabado", type:"select", options:["Interior", "Exterior", "Con ollados", "Por confirmar"]}
     ], description:"Indica si necesitas diseño, instalación o entrega en una fecha concreta."
@@ -34,15 +34,15 @@ const journeys = {
       {name:"type", label:"Tipo de vinilo", type:"select", options:["Vinilo de corte", "Vinilo de impresión", "Vinilo transparente", "Vinilo para escaparate", "Necesito consejo"]},
       {name:"width", label:"Ancho del rollo", type:"select", options:["A consultar", "Ancho estándar", "Otro ancho"]},
       {name:"finish", label:"Color o acabado", type:"text", placeholder:"Ej. azul brillo, blanco mate"},
-      {name:"quantity", label:"Metros lineales", type:"number", min:1, step:1, value:1}
+      {name:"quantity", label:"Metros lineales", type:"number", min:0.1, step:0.1, value:1, required:true}
     ], description:"El metraje se prepara en una pieza continua, sujeto a disponibilidad del rollo."
   },
   pvc: {
     kind: "product", title: "PVC y metacrilato cortados a medida", kicker: "Planchas · piezas · fresado", category: "PVC y metacrilato", heading: "De la plancha\na la medida exacta.", intro: "Selecciona PVC o metacrilato y comparte las dimensiones de tus piezas. También puedes adjuntar el archivo de corte para que el taller lo revise.", visual: "sheet", visualLabel: "MATERIAL Y MEDIDAS A TU PROYECTO", promise: "Grosor, acabado y tolerancias se confirmarán con el taller antes del pago.", fields: [
       {name:"material", label:"Material", type:"select", options:["PVC espumado", "Metacrilato transparente", "Metacrilato opal", "Metacrilato de color", "Necesito consejo"]},
       {name:"thickness", label:"Grosor", type:"select", options:["A consultar", "3 mm", "5 mm", "10 mm", "Otro grosor"]},
-      {name:"width", label:"Ancho de pieza · mm", type:"number", min:1, placeholder:"600"},
-      {name:"height", label:"Alto de pieza · mm", type:"number", min:1, placeholder:"400"},
+      {name:"width", label:"Ancho de pieza · mm", type:"number", min:50, placeholder:"600", required:true},
+      {name:"height", label:"Alto de pieza · mm", type:"number", min:50, placeholder:"400", required:true},
       {name:"quantity", label:"Piezas", type:"number", min:1, value:1}
     ], description:"Si son varias piezas, explica si tienen formas o medidas distintas."
   },
@@ -52,7 +52,7 @@ const journeys = {
       {name:"thickness", label:"Grosor · mm", type:"number", min:1, placeholder:"3"},
       {name:"width", label:"Ancho aproximado · mm", type:"number", min:1, placeholder:"300"},
       {name:"height", label:"Alto aproximado · mm", type:"number", min:1, placeholder:"200"},
-      {name:"quantity", label:"Unidades", type:"number", min:1, value:1}
+      {name:"quantity", label:"Unidades", type:"number", min:1, value:1, required:true}
     ], description:"Adjunta un archivo vectorial si lo tienes. El equipo te confirma si está listo para corte."
   },
   proyecto: {
@@ -61,7 +61,7 @@ const journeys = {
       {name:"visit", label:"Fecha preferida para visitarnos", type:"datetime-local"},
       {name:"name", label:"Tu nombre", type:"text", autocomplete:"name", required:true, placeholder:"¿Cómo te llamas?"},
       {name:"phone", label:"Tu teléfono", type:"tel", autocomplete:"tel", required:true, placeholder:"Para poder responderte"},
-      {name:"email", label:"Tu email", type:"email", autocomplete:"email", placeholder:"nombre@empresa.com"}
+      {name:"email", label:"Tu email", type:"email", autocomplete:"email", required:true, placeholder:"nombre@empresa.com"}
     ], description:"Una foto del espacio o una referencia visual nos ayuda a entender mejor la idea."
   }
 };
@@ -128,7 +128,7 @@ function fieldMarkup(field) {
   if (field.type === "textarea") {
     return `<label class="experience-field experience-field-wide">${esc(field.label)}<textarea name="${esc(field.name)}" rows="4"${placeholder}${required}></textarea></label>`;
   }
-  return `<label class="experience-field">${esc(field.label)}<input name="${esc(field.name)}" type="${esc(field.type)}"${field.min ? ` min="${field.min}"` : ""}${field.step ? ` step="${field.step}"` : ""}${field.value ? ` value="${field.value}"` : ""}${placeholder}${autocomplete}${required}></label>`;
+  return `<label class="experience-field">${esc(field.label)}<input name="${esc(field.name)}" type="${esc(field.type)}"${field.min !== undefined ? ` min="${field.min}"` : ""}${field.step ? ` step="${field.step}"` : ""}${field.value !== undefined ? ` value="${field.value}"` : ""}${placeholder}${autocomplete}${required}></label>`;
 }
 
 function renderHub() {
@@ -137,88 +137,8 @@ function renderHub() {
 
 function renderExperience(data) {
   const quoteOnly = data.kind === "quote";
-  return `<main class="experience-page" id="contenido"><nav class="breadcrumbs"><a href="${HOME}">Inicio</a><span>/</span><a href="index.html">Tienda online</a><span>/</span><span>${esc(data.category)}</span></nav><section class="experience-hero"><div class="experience-copy"><p class="eyebrow"><span class="status-dot"></span>${esc(data.kicker)}</p><h1>${esc(data.heading).replace(/\n/g,"<br>")}</h1><p class="experience-intro">${esc(data.intro)}</p><div class="experience-benefits"><span>01&nbsp; Asesoramiento del taller</span><span>02&nbsp; Precio confirmado antes de producir</span></div></div><div class="experience-visual visual-${data.visual}"><div class="visual-orbit"></div><img src="../public/assets/nenufero-logo.png" alt=""><span class="visual-caption">${esc(data.visualLabel)}</span></div></section><section class="experience-workspace"><div class="workspace-heading"><div><p class="eyebrow">${quoteOnly?"Primer contacto":"Configura tu pedido"}</p><h2>${quoteOnly?"Cuéntanos lo esencial.":"Vamos paso a paso."}</h2></div><span class="demo-tag">PROPUESTA LOCAL</span></div><div class="workspace-grid"><form class="experience-form" data-experience-form><div class="form-step"><span class="step-number">01</span><div><h3>${quoteOnly?"Tu idea":"Elige opciones"}</h3><p>${esc(data.description)}</p></div></div><div class="experience-fields">${data.fields.map(fieldMarkup).join("")}${quoteOnly?`<label class="experience-field experience-field-wide">Cuéntanos tu idea<textarea name="details" rows="4" placeholder="Medidas, uso, cantidades o lo que te gustaría conseguir…" required></textarea></label>`:""}${quoteOnly?"":`<label class="experience-field experience-field-wide">Notas para el taller<textarea name="details" rows="3" placeholder="Color, acabado, instalación o fecha que tienes en mente…"></textarea></label>`}</div><label class="file-field"><span class="file-icon">↑</span><span><b>Sube una referencia</b><small>JPG, PNG, PDF, SVG, AI o EPS · Hasta 20 MB</small></span><input type="file" name="reference" accept="image/*,.pdf,.svg,.ai,.eps" data-reference-file><span class="file-preview" data-file-preview>Opcional</span></label><div class="form-step step-contact"><span class="step-number">02</span><div><h3>Revisamos contigo</h3><p>Te confirmamos opciones, disponibilidad y el siguiente paso.</p></div></div>${quoteOnly?"":`<div class="experience-fields contact-fields"><label class="experience-field">Tu nombre<input name="name" autocomplete="name" placeholder="¿Cómo te llamas?" required></label><label class="experience-field">Tu teléfono<input name="phone" type="tel" autocomplete="tel" placeholder="Para poder responderte" required></label><label class="experience-field experience-field-wide">Tu email<input name="email" type="email" autocomplete="email" placeholder="nombre@empresa.com"></label></div>`}<p class="experience-error" data-form-error role="alert"></p><button class="button button-blue experience-submit" type="submit">${quoteOnly?"Preparar mi consulta":"Añadir al resumen"}<span>↗</span></button><p class="form-disclaimer">${esc(data.promise)} En esta propuesta local, los precios y los pagos se mostrarán al conectar el catálogo de Shopify.</p></form><aside class="workspace-aside"><div class="aside-card"><span class="aside-index">N / ESTUDIO</span><h3>Una persona<br>al otro lado.</h3><p>El equipo te ayuda a elegir el material, revisar el diseño y confirmar el precio antes de fabricar.</p><a href="https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Hola, quiero consultar sobre ${data.category}.`)}" target="_blank" rel="noreferrer">Escribir por WhatsApp <span>↗</span></a></div><div class="aside-help"><p class="eyebrow">Prefieres email</p><a href="https://nenufero.online/contacto/" target="_blank" rel="noreferrer">Abrir formulario de contacto ↗</a><p>¿Quieres venir al taller? <a href="proyecto-a-medida.html">Solicita una visita.</a></p></div></aside></div></section><section class="experience-faq"><p class="eyebrow">Respuestas claras</p><div>${(journeyFaqs[pageId]||journeyFaqs.proyecto).map(([question,answer])=>`<details><summary>${esc(question)}<span>+</span></summary><p>${esc(answer)}</p></details>`).join("")}</div></section><section class="experience-next"><p class="eyebrow">También puedes explorar</p><div>${items.filter(([,title])=>title!==data.category).slice(0,3).map(([url,title])=>`<a href="${url}">${title}<span>↗</span></a>`).join("")}</div></section></main>`;
+  const hasContactFields = data.fields.some((field) => field.name === "email");
+  const quoteContact = quoteOnly && !hasContactFields ? `<div class="experience-fields contact-fields"><label class="experience-field">Tu nombre<input name="name" autocomplete="name" placeholder="¿Cómo te llamas?" required maxlength="120"></label><label class="experience-field">Tu teléfono<input name="phone" type="tel" autocomplete="tel" placeholder="Para poder responderte" required maxlength="40"></label><label class="experience-field experience-field-wide">Tu email<input name="email" type="email" autocomplete="email" placeholder="nombre@empresa.com" required maxlength="254"></label></div>` : "";
+  const purchaseInfo = quoteOnly ? "Esta consulta se guarda en modo local y no se envía al taller." : "El precio de prueba se muestra solo para simular el recorrido. No es una tarifa real.";
+  return `<main class="experience-page" id="contenido"><nav class="breadcrumbs"><a href="${HOME}">Inicio</a><span>/</span><a href="index.html">Tienda online</a><span>/</span><span>${esc(data.category)}</span></nav><section class="experience-hero"><div class="experience-copy"><p class="eyebrow"><span class="status-dot"></span>${esc(data.kicker)}</p><h1>${esc(data.heading).replace(/\n/g,"<br>")}</h1><p class="experience-intro">${esc(data.intro)}</p><div class="experience-benefits"><span>01&nbsp; Asesoramiento del taller</span><span>02&nbsp; Precio confirmado antes de producir</span></div></div><div class="experience-visual visual-${data.visual}"><div class="visual-orbit"></div><img src="../public/assets/nenufero-logo.png" alt=""><span class="visual-caption">${esc(data.visualLabel)}</span></div></section><section class="experience-workspace"><div class="workspace-heading"><div><p class="eyebrow">${quoteOnly?"Primer contacto":"Configura tu pedido"}</p><h2>${quoteOnly?"Cuéntanos lo esencial.":"Vamos paso a paso."}</h2></div><span class="demo-tag" data-mode-badge>SIMULACIÓN</span></div><p class="commerce-mode-note" data-mode-note>${esc(purchaseInfo)}</p><div class="workspace-grid"><form class="experience-form" data-experience-form data-kind="${quoteOnly?"quote":"purchase"}"><div class="form-step"><span class="step-number">01</span><div><h3>${quoteOnly?"Tu idea":"Elige opciones"}</h3><p>${esc(data.description)}</p></div></div><div class="experience-fields">${data.fields.map(fieldMarkup).join("")}${quoteOnly?`<label class="experience-field experience-field-wide">Cuéntanos tu idea<textarea name="details" rows="4" placeholder="Medidas, uso, cantidades o lo que te gustaría conseguir…" required maxlength="4000"></textarea></label>`:`<label class="experience-field experience-field-wide">Notas para el taller<textarea name="details" rows="3" placeholder="Color, acabado, instalación o fecha que tienes en mente…" maxlength="1000"></textarea></label>`}</div>${quoteContact}<label class="file-field"><span class="file-icon">↑</span><span><b>Sube una referencia</b><small>JPG, PNG, PDF, SVG, AI o EPS · Hasta 20 MB</small></span><input type="file" name="reference" accept="image/*,.pdf,.svg,.ai,.eps" data-reference-file><span class="file-preview" data-file-preview>Opcional</span></label>${quoteOnly?`<div class="form-step step-contact"><span class="step-number">02</span><div><h3>Revisamos contigo</h3><p>Guardaremos la solicitud de prueba con tus datos y referencia.</p></div></div>`:`<div class="price-preview" data-price-preview hidden><span data-price-label>Precio orientativo</span><strong data-price-value></strong><small data-price-unit></small></div>`}<p class="experience-error" data-form-error role="alert"></p><button class="button button-blue experience-submit" type="submit">${quoteOnly?"Guardar solicitud de prueba":"Añadir al carrito"}<span>↗</span></button><p class="form-disclaimer">${esc(data.promise)} ${purchaseInfo}</p></form><aside class="workspace-aside"><div class="aside-card"><span class="aside-index">N / ESTUDIO</span><h3>Una persona<br>al otro lado.</h3><p>El equipo te ayuda a elegir el material, revisar el diseño y confirmar el precio antes de fabricar.</p><a href="https://wa.me/${WHATSAPP}?text=${encodeURIComponent(`Hola, quiero consultar sobre ${data.category}.`)}" target="_blank" rel="noreferrer">Escribir por WhatsApp <span>↗</span></a></div><div class="aside-help"><p class="eyebrow">Prefieres email</p><a href="mailto:?subject=${encodeURIComponent(`Consulta para Nenufero · ${data.category}`)}">Contactar por email ↗</a><p>¿Quieres venir al taller? <a href="proyecto-a-medida.html">Solicita una visita.</a></p></div></aside></div></section><section class="experience-faq"><p class="eyebrow">Respuestas claras</p><div>${(journeyFaqs[pageId]||journeyFaqs.proyecto).map(([question,answer])=>`<details><summary>${esc(question)}<span>+</span></summary><p>${esc(answer)}</p></details>`).join("")}</div></section><section class="experience-next"><p class="eyebrow">También puedes explorar</p><div>${items.filter(([,title])=>title!==data.category).slice(0,3).map(([url,title])=>`<a href="${url}">${title}<span>↗</span></a>`).join("")}</div></section></main>`;
 }
-
-const app = document.querySelector("#experience-app");
-const pageId = document.body.dataset.experience;
-let pendingReferenceFiles = [];
-const activeCart = JSON.parse(localStorage.getItem("nenufero-demo-order") || "[]");
-const count = activeCart.reduce((sum,item)=>sum + Number(item.quantity || 1),0);
-const shell = `<div class="store-announcement"><span>Estudio de impresión y rotulación en Madrid</span><a href="https://wa.me/${WHATSAPP}" target="_blank" rel="noreferrer">Hablemos de tu proyecto ↗</a></div><header class="store-header"><a class="store-logo" href="${HOME}" aria-label="Nenufero, inicio"><img src="../public/assets/nenufero-logo.png" alt=""><b>NENUFERO</b></a><button class="store-menu-button" type="button" aria-label="Abrir navegación" aria-expanded="false">Menú <span>+</span></button><nav class="store-nav"><a href="${HOME}">Inicio</a><a href="index.html">Tienda online</a><a href="proyecto-a-medida.html">Tu proyecto</a><a href="https://nenufero.online/contacto/" target="_blank" rel="noreferrer">Contacto</a></nav><a class="header-store-link store-quick-link" href="index.html"><span>Comprar online</span><span aria-hidden="true">↗</span></a><button class="order-button" type="button" data-open-order>Mi pedido <span data-order-count>${count}</span></button></header>`;
-const footer = `<footer class="store-footer"><a class="store-logo" href="${HOME}"><img src="../public/assets/nenufero-logo.png" alt=""><b>NENUFERO</b></a><p>Ideas que se ven. Marcas que se recuerdan.<br>Diseñado y producido en Madrid.</p><div><a href="https://wa.me/${WHATSAPP}" target="_blank" rel="noreferrer">WhatsApp ↗</a><a href="https://nenufero.online/contacto/" target="_blank" rel="noreferrer">Email ↗</a><a href="https://maps.google.com/?q=Calle+La+del+Manojo+de+Rosas+81+Madrid" target="_blank" rel="noreferrer">Visítanos ↗</a></div></footer><div class="order-overlay" data-order-overlay hidden></div><aside class="order-drawer" data-order-drawer aria-hidden="true"><div class="drawer-top"><div><p class="eyebrow">TU SELECCIÓN</p><h2>Mi pedido <span data-drawer-count>(${count})</span></h2></div><button type="button" data-close-order aria-label="Cerrar pedido">×</button></div><div class="drawer-items" data-drawer-items></div><div class="drawer-bottom"><p>Propuesta local sin cobro. El taller confirma precio y disponibilidad antes del pago.</p><button class="button button-blue" type="button" data-send-order>Continuar por WhatsApp ↗</button></div></aside>`;
-document.querySelector(".skip-link").insertAdjacentHTML("afterend",shell);
-app.innerHTML = pageId === "hub" ? renderHub() : renderExperience(journeys[pageId] || journeys.proyecto);
-document.body.insertAdjacentHTML("beforeend",footer);
-
-const menuToggle = document.querySelector(".store-menu-button");
-menuToggle.addEventListener("click",()=>{
-  const open=menuToggle.getAttribute("aria-expanded")==="true";
-  menuToggle.setAttribute("aria-expanded",String(!open));
-  document.querySelector(".store-nav").classList.toggle("is-open",!open);
-});
-
-const orderDrawer = document.querySelector("[data-order-drawer]");
-const overlay = document.querySelector("[data-order-overlay]");
-const drawerItems = document.querySelector("[data-drawer-items]");
-function readOrder(){ return JSON.parse(localStorage.getItem("nenufero-demo-order") || "[]"); }
-function showOrder(){
-  const order=readOrder();
-  const itemCount=order.reduce((sum,item)=>sum+Number(item.quantity||1),0);
-  document.querySelectorAll("[data-order-count]").forEach(el=>el.textContent=itemCount);
-  document.querySelector("[data-drawer-count]").textContent=`(${itemCount})`;
-  drawerItems.innerHTML=order.length?order.map((item,index)=>`<article class="drawer-line"><div><b>${esc(item.category)}</b><p>${esc(item.summary)}</p><small>${esc(item.fileName ? `Referencia: ${item.fileName}` : "Precio pendiente de confirmar")}</small></div><button type="button" data-remove-line="${index}" aria-label="Quitar ${esc(item.category)}">×</button></article>`).join(""):`<div class="drawer-empty"><span>✳</span><h3>Aún no has añadido nada.</h3><p>Elige una categoría y configura tu primer pedido.</p><a href="index.html">Explorar tienda ↗</a></div>`;
-  drawerItems.querySelectorAll("[data-remove-line]").forEach(button=>button.addEventListener("click",()=>{
-    const items=readOrder();items.splice(Number(button.dataset.removeLine),1);localStorage.setItem("nenufero-demo-order",JSON.stringify(items));showOrder();
-  }));
-  orderDrawer.classList.add("is-open");orderDrawer.setAttribute("aria-hidden","false");overlay.hidden=false;document.body.classList.add("drawer-active");
-}
-function hideOrder(){orderDrawer.classList.remove("is-open");orderDrawer.setAttribute("aria-hidden","true");overlay.hidden=true;document.body.classList.remove("drawer-active");}
-document.querySelector("[data-open-order]").addEventListener("click",showOrder);
-document.querySelector("[data-close-order]").addEventListener("click",hideOrder);
-overlay.addEventListener("click",hideOrder);
-document.addEventListener("keydown",event=>{if(event.key==="Escape")hideOrder();});
-
-document.querySelectorAll("[data-reference-file]").forEach(input=>input.addEventListener("change",()=>{
-  const preview=input.closest(".file-field").querySelector("[data-file-preview]");
-  const file=input.files?.[0];
-  preview.replaceChildren();
-  if(!file){preview.textContent="Opcional";return;}
-  if(file.size>FILE_LIMIT){input.value="";preview.textContent="Máximo 20 MB";preview.classList.add("file-error");return;}
-  preview.classList.remove("file-error");
-  if(file.type.startsWith("image/")){const img=document.createElement("img");img.src=URL.createObjectURL(file);img.alt="Vista previa de la referencia";preview.append(img);}
-  const name=document.createElement("span");name.textContent=`${file.name} · ${(file.size/1048576).toFixed(1)} MB`;preview.append(name);
-}));
-
-document.querySelectorAll("[data-experience-form]").forEach(form=>form.addEventListener("submit",event=>{
-  event.preventDefault();
-  const error=form.querySelector("[data-form-error]");error.textContent="";
-  if(!form.reportValidity())return;
-  const data=new FormData(form);
-  const file=data.get("reference");
-  if(file instanceof File&&file.size>FILE_LIMIT){error.textContent="El archivo supera 20 MB. Elige una versión más ligera.";return;}
-  const phone=String(data.get("phone")||"").trim();
-  if(phone&&phone.replace(/\D/g,"").length<9){error.textContent="Escribe un teléfono válido para que podamos responderte.";form.elements.phone.focus();return;}
-  const values=[...form.querySelectorAll("input:not([type=file]),select,textarea")].filter(field=>field.value&&!["name","phone","email"].includes(field.name)).map(field=>`${field.closest("label")?.childNodes[0]?.textContent.trim()||field.name}: ${field.value}`);
-  if(!values.length){error.textContent="Añade alguna opción para poder preparar el pedido.";return;}
-  const quantity=Number(data.get("quantity"))||1;
-  const itemSummary=values.join(" · ");
-  const order=readOrder();
-  order.push({category:journeys[pageId]?.category||"Proyecto a medida",summary:itemSummary,quantity,fileName:file instanceof File?file.name:"",name:String(data.get("name")||""),phone,email:String(data.get("email")||""),visit:String(data.get("visit")||"")});
-  if(file instanceof File&&file.name)pendingReferenceFiles.push(file);
-  localStorage.setItem("nenufero-demo-order",JSON.stringify(order));
-  showOrder();
-}));
-
-document.querySelector("[data-send-order]").addEventListener("click",async()=>{
-  const order=readOrder();if(!order.length)return;
-  const contact=order.find(item=>item.name||item.phone||item.email||item.visit)||{};
-  const message=`Hola${contact.name?`, soy ${contact.name}`:""}. Quiero solicitar presupuesto para este pedido:\n${order.map((item,index)=>`${index+1}. ${item.category} · ${item.summary}${item.fileName?` · Archivo: ${item.fileName}`:""}`).join("\n")}${contact.phone?`\nTeléfono: ${contact.phone}`:""}${contact.email?`\nEmail: ${contact.email}`:""}${contact.visit?`\nVisita solicitada: ${new Date(contact.visit).toLocaleString("es-ES",{dateStyle:"short",timeStyle:"short"})}`:""}\n¿Me confirmáis disponibilidad, precio y forma de pago?`;
-  if(pendingReferenceFiles.length&&navigator.canShare?.({files:pendingReferenceFiles})){
-    try{await navigator.share({title:"Pedido Nenufero",text:message,files:pendingReferenceFiles});return;}catch(error){if(error.name==="AbortError")return;}
-  }
-  window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(message)}`,"_blank","noopener,noreferrer");
-});
-
-const visitInput=document.querySelector('input[name="visit"]');
-if(visitInput){const local=new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16);visitInput.min=local;}

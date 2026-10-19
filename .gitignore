@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+node_modules/
+data/orders.json
+data/requests.json
+data/processed-events.json
+data/uploads.json
+data/uploads/
+data/*.tmp
