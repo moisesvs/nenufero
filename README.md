@@ -4,6 +4,8 @@ Propuesta de tienda y experiencia de compra para revisión en localhost. No publ
 
 Desde el enlace **Personalizar la propuesta** del pie de página puedes cambiar el logotipo, el nombre, los textos principales, las cuatro imágenes de la galería de servicios y las cuatro actividades de la portada. Esos cambios se guardan solo en el navegador actual; el editor sirve para preparar y presentar una variante local, no sustituye a un CMS ni publica cambios en internet.
 
+Las preguntas frecuentes tienen una página propia en `faq.html` y aparecen en el menú principal.
+
 ## Arranque
 
 Requiere Node.js 20 o superior. Ejecuta `npm start` desde la carpeta del proyecto y abre http://127.0.0.1:8765. El carrito, los pedidos de prueba, las solicitudes y las subidas se guardan localmente en `data/` (excluido de Git).
