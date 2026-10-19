@@ -1,0 +1,24 @@
+<section class="material-categories section-shell" id="materiales">
+  <div class="section-heading"><div><p class="eyebrow">Compra online a tu medida</p><h2>{{ section.settings.heading | escape | newline_to_br }}</h2></div><p class="section-aside">Elige tu material.<br>Configura y paga en el checkout.</p></div>
+  <div class="material-category-grid">
+    {% assign vinyl_collection = section.settings.vinyl_collection %}
+    {% assign sheet_collection = section.settings.sheet_collection %}
+    {% assign laser_collection = section.settings.laser_collection %}
+    {% assign material_collections = 'vinyl_collection,sheet_collection,laser_collection' | split: ',' %}
+    {% assign category_numbers = '01,02,03' | split: ',' %}
+    {% assign category_titles = 'Vinilo por metros|PVC y metacrilato|Corte láser y fresado' | split: '|' %}
+    {% assign category_copies = 'Escoge tipo, color y metros para tu próximo trabajo.|Piezas cortadas a medida con el grosor y acabado que buscas.|Sube tu archivo y configura piezas personalizadas.' | split: '|' %}
+    {% for collection_key in material_collections %}
+      {% case collection_key %}{% when 'vinyl_collection' %}{% assign material_collection = vinyl_collection %}{% when 'sheet_collection' %}{% assign material_collection = sheet_collection %}{% else %}{% assign material_collection = laser_collection %}{% endcase %}
+      {% assign category_index = forloop.index0 %}
+      <article class="material-category material-category-{{ forloop.index }}">
+        <div class="material-category-art"><span>{{ category_numbers[category_index] }}</span><b>{% if forloop.index == 1 %}V/{% elsif forloop.index == 2 %}M²{% else %}↗{% endif %}</b></div>
+        <div class="material-category-copy"><p class="eyebrow">Materiales para producir</p><h3>{{ category_titles[category_index] }}</h3><p>{{ category_copies[category_index] }}</p><a class="text-link" href="{% if material_collection != blank %}{{ material_collection.url }}{% else %}{{ routes.all_products_collection_url }}{% endif %}">{% if material_collection != blank and material_collection.products_count > 0 %}Ver {{ material_collection.products_count }} productos{% else %}Explorar catálogo{% endif %} <span aria-hidden="true">↗</span></a></div>
+      </article>
+    {% endfor %}
+  </div>
+  <p class="materials-payment-note">Precio, stock y variantes se muestran desde Shopify. Al finalizar el carrito, el cliente pasa al checkout seguro de la tienda.</p>
+</section>
+{% schema %}
+{"name":"Categorías de materiales","settings":[{"type":"textarea","id":"heading","label":"Titular","default":"Materiales listos para tu próximo proyecto."},{"type":"collection","id":"vinyl_collection","label":"Colección de vinilo por metros"},{"type":"collection","id":"sheet_collection","label":"Colección de PVC y metacrilato"},{"type":"collection","id":"laser_collection","label":"Colección de corte láser y fresado"}],"presets":[{"name":"Categorías de materiales"}]}
+{% endschema %}

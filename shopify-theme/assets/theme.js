@@ -97,6 +97,20 @@
       titleLink.href = item.url;
       titleLink.append(element("h3", "", item.product_title));
       const variant = element("p", "", `${item.variant_title && item.variant_title !== "Default Title" ? `${item.variant_title} · ` : ""}${money(item.final_price)}`);
+      Object.entries(item.properties || {}).forEach(([propertyName, propertyValue]) => {
+        if (!propertyValue || propertyName.startsWith("_")) return;
+        const property = element("p", "cart-property");
+        if (String(propertyValue).startsWith("http")) {
+          const link = element("a", "", propertyName);
+          link.href = propertyValue;
+          link.target = "_blank";
+          link.rel = "noreferrer";
+          property.append(link);
+        } else {
+          property.textContent = `${propertyName}: ${propertyValue}`;
+        }
+        detail.append(property);
+      });
       const label = element("label", "drawer-item-quantity", "Cantidad");
       const quantity = element("input");
       quantity.type = "number";
@@ -126,6 +140,13 @@
     event.preventDefault();
     const button = form.querySelector('[type="submit"]');
     const message = form.querySelector("[data-product-message]");
+    const file = form.querySelector("[data-order-file]")?.files?.[0];
+    const fileError = form.querySelector("[data-file-error]");
+    if (fileError) fileError.textContent = "";
+    if (file && file.size > 20 * 1024 * 1024) {
+      if (fileError) fileError.textContent = "El archivo supera 20 MB. Elige una versión más ligera.";
+      return;
+    }
     form.classList.add("is-loading");
     if (button) button.disabled = true;
     if (message) message.textContent = "Añadiendo al carrito…";
@@ -154,6 +175,11 @@
       if (variantSelect && button) button.disabled = variantSelect.selectedOptions[0]?.dataset.available === "false";
     }
   });
+
+  document.querySelectorAll("[data-order-file]").forEach((input) => input.addEventListener("change", () => {
+    const error = input.closest("form")?.querySelector("[data-file-error]");
+    if (error) error.textContent = input.files?.[0]?.size > 20 * 1024 * 1024 ? "El archivo supera 20 MB. Elige una versión más ligera." : "";
+  }));
 
   document.addEventListener("change", async (event) => {
     const quantity = event.target.closest("[data-cart-quantity]");
@@ -216,7 +242,19 @@
 
   document.querySelectorAll("[data-sort-by]").forEach((select) => select.addEventListener("change", () => select.closest("form")?.requestSubmit()));
 
-  document.querySelectorAll("[data-whatsapp-form]").forEach((form) => form.addEventListener("submit", (event) => {
+  async function shareWhatsApp(recipient, message, file) {
+    if (file && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ title: "Consulta Nenufero", text: message, files: [file] });
+        return;
+      } catch (error) {
+        if (error.name === "AbortError") return;
+      }
+    }
+    window.open(`https://wa.me/${recipient}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+  }
+
+  document.querySelectorAll("[data-whatsapp-form]").forEach((form) => form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const error = form.querySelector("[data-form-error]");
     error.textContent = "";
@@ -233,9 +271,50 @@
       error.textContent = "No se ha configurado el teléfono de contacto de Nenufero.";
       return;
     }
-    const message = [`Hola, soy ${String(data.get("name")).trim()}.`, `Quería consultar un proyecto de ${String(data.get("service")).toLowerCase()}.`, `Mi teléfono es ${phone}.`, `Detalles: ${String(data.get("details")).trim()}`].join("\n");
-    window.open(`https://wa.me/${recipient}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+    const email = String(data.get("email") || "").trim();
+    const visit = String(data.get("visit") || "");
+    const file = data.get("reference");
+    if (file instanceof File && file.size > 20 * 1024 * 1024) {
+      error.textContent = "El archivo supera 20 MB. Elige una versión más ligera.";
+      return;
+    }
+    const message = [`Hola, soy ${String(data.get("name")).trim()}.`, `Quería consultar un proyecto de ${String(data.get("service")).toLowerCase()}.`, `Mi teléfono es ${phone}.`, email ? `Mi email es ${email}.` : "", visit ? `Me gustaría solicitar una visita el ${new Date(visit).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" })}.` : "", file instanceof File && file.name ? `Archivo de referencia: ${file.name}. Si no se comparte automáticamente, lo adjuntaré a WhatsApp.` : "", `Detalles: ${String(data.get("details")).trim()}`].filter(Boolean).join("\n");
+    await shareWhatsApp(recipient, message, file instanceof File && file.name ? file : null);
   }));
+
+  document.querySelectorAll("[data-quote-file]").forEach((input) => input.addEventListener("change", () => {
+    const preview = input.closest(".upload-field")?.querySelector("[data-quote-preview]");
+    if (!preview) return;
+    preview.replaceChildren();
+    const file = input.files?.[0];
+    if (!file) { preview.textContent = "Todavía no has seleccionado ningún archivo."; return; }
+    if (file.size > 20 * 1024 * 1024) {
+      input.value = "";
+      preview.classList.add("form-error");
+      preview.textContent = "El archivo supera 20 MB. Selecciona uno más ligero.";
+      return;
+    }
+    preview.classList.remove("form-error");
+    if (file.type.startsWith("image/")) {
+      const image = element("img", "", "");
+      image.alt = "Vista previa del archivo";
+      image.src = URL.createObjectURL(file);
+      preview.append(image);
+    }
+    preview.append(element("span", "", `${file.name} · ${(file.size / (1024 * 1024)).toFixed(1)} MB`));
+  }));
+
+  document.querySelectorAll("[data-visit-date]").forEach((input) => {
+    const local = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    input.min = local;
+  });
+
+  document.querySelectorAll("[data-cart-items]").forEach((container) => {
+    container.querySelectorAll("[data-cart-key]").forEach((row) => {
+      // Existing cart properties are rendered by Liquid on the full cart page.
+      row.querySelectorAll(".cart-property").forEach((property) => property.classList.add("bag-item-property"));
+    });
+  });
 
   if ("IntersectionObserver" in window && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     const observer = new IntersectionObserver((entries, currentObserver) => entries.forEach((entry) => {

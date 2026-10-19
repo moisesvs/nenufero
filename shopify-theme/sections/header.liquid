@@ -5,7 +5,7 @@
   </a>
   <button class="menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="PrimaryNav"><span></span><span></span></button>
   <nav class="main-nav" id="PrimaryNav" aria-label="Navegación principal">
-    {% if section.settings.menu != blank and section.settings.menu.links.size > 0 %}{% for link in section.settings.menu.links %}<a href="{{ link.url }}"{% if link.active %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>{% endfor %}{% else %}<a href="{{ routes.root_url }}">Inicio</a><a href="{{ routes.root_url }}#servicios">Servicios</a><a href="{{ routes.all_products_collection_url }}">Tienda</a><a href="{{ routes.root_url }}#proceso">Cómo trabajamos</a><a href="{{ routes.root_url }}#contacto">Contacto</a>{% endif %}
+    {% if section.settings.menu != blank and section.settings.menu.links.size > 0 %}{% for link in section.settings.menu.links %}<a href="{{ link.url }}"{% if link.active %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>{% endfor %}{% else %}<a href="{{ routes.root_url }}">Inicio</a><a href="{{ routes.root_url }}#servicios">Servicios</a><a href="{{ routes.root_url }}#materiales">Materiales</a><a href="{{ routes.all_products_collection_url }}">Tienda</a><a href="{{ routes.root_url }}#proceso">Cómo trabajamos</a><a href="{{ routes.root_url }}#contacto">Contacto</a>{% endif %}
   </nav>
   <button class="bag-button" type="button" data-cart-open aria-label="Abrir carrito, {{ cart.item_count }} productos"><span>Mi pedido</span><span class="bag-count" data-cart-count>{{ cart.item_count }}</span></button>
 </header>
