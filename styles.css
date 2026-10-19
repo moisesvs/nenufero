@@ -135,7 +135,15 @@
 .faq-page-content{max-width:1440px;min-height:min(680px,calc(100vh - 250px));margin:0 auto;padding-left:8vw;padding-right:8vw;align-content:center}
 .faq-page-content .faq-heading h1{margin:0;font-size:clamp(45px,5vw,64px);line-height:1;letter-spacing:-.07em;font-weight:600}
 .faq-page-content .faq-heading h1 span{color:var(--blue)}
+.page-navigation{display:flex;align-items:center;gap:28px;min-height:58px;padding:0 8vw;border-bottom:1px solid var(--line);background:#efeee8;font-size:10px}
+.page-back{display:inline-flex;align-items:center;gap:9px;font-weight:700;white-space:nowrap}
+.page-back span{font-size:17px;color:var(--blue)}
+.page-navigation-links{display:flex;align-items:center;gap:22px;margin-left:auto}
+.page-navigation-links a{color:#686961;white-space:nowrap}
+.page-navigation-links a:hover,.page-back:hover{color:var(--blue)}
+.page-current{padding-left:22px;border-left:1px solid #cfcdc5;color:#181916;font-weight:700;white-space:nowrap}
 @media(max-width:680px){.faq-page-content{min-height:0;padding:77px 5vw 79px}.faq-page-content .faq-heading h1{font-size:clamp(36px,10vw,52px)}}
+@media(max-width:680px){.page-navigation{min-height:0;flex-wrap:wrap;gap:12px 20px;padding:14px 5vw}.page-navigation-links{order:3;flex:0 0 100%;justify-content:space-between;gap:10px;margin:0}.page-navigation-links a{font-size:9px}.page-current{margin-left:auto;padding-left:12px;font-size:9px}}
 .material-panel{position:absolute;width:48%;height:48%;display:flex;align-items:center;justify-content:center;box-shadow:0 20px 35px rgba(24,25,22,.16);font-size:clamp(16px,2.5vw,34px);font-weight:800;line-height:.98;letter-spacing:-.06em}
 .material-panel-back{top:15%;left:17%;background:rgba(23,71,219,.28);color:#1747db;transform:rotate(-11deg)}
 .material-panel-mid{top:24%;right:12%;background:rgba(250,250,247,.8);color:#565a5f;transform:rotate(8deg)}
