@@ -1,0 +1,69 @@
+{
+  "sections": {
+    "main": {
+      "type": "purchase-experience",
+      "settings": {
+        "mode": "catalog",
+        "visual": "shirt",
+        "kicker": "Personalizados",
+        "heading": "Tu idea, hecha para llevar.",
+        "copy": "<p>Camisetas, tazas y objetos con el diseño de tu marca. Selecciona una opción de la colección para consultar variantes y precio.</p>",
+        "image": "",
+        "image_caption": "DISEÑADO Y PRODUCIDO EN MADRID",
+        "catalog_kicker": "Productos disponibles",
+        "catalog_heading": "Camisetas, tazas y objetos personalizados",
+        "collection": "",
+        "empty_heading": "Estamos preparando esta colección.",
+        "empty_copy": "Asigna la colección de esta experiencia en el editor de Shopify para mostrar productos, variantes y precios.",
+        "request_note": "Pide presupuesto o solicita una visita."
+      },
+      "blocks": {
+        "step1": {
+          "type": "step",
+          "settings": {
+            "title": "Elige opciones",
+            "copy": "Selecciona una variante con precio y disponibilidad visibles."
+          }
+        },
+        "step2": {
+          "type": "step",
+          "settings": {
+            "title": "Añade al carrito",
+            "copy": "Revisa el artículo, las unidades y el archivo de referencia."
+          }
+        },
+        "step3": {
+          "type": "step",
+          "settings": {
+            "title": "Paga online",
+            "copy": "Completa el pedido desde el checkout de Shopify."
+          }
+        },
+        "faq1": {
+          "type": "faq",
+          "settings": {
+            "question": "¿Puedo enviar mi diseño?",
+            "answer": "Sí. Adjunta una referencia desde la ficha del producto. El archivo queda asociado al artículo del pedido."
+          }
+        },
+        "faq2": {
+          "type": "faq",
+          "settings": {
+            "question": "¿Puedo combinar tallas o colores?",
+            "answer": "Elige las variantes disponibles. Para una combinación especial, pregunta al taller antes de comprar."
+          }
+        }
+      },
+      "block_order": [
+        "step1",
+        "step2",
+        "step3",
+        "faq1",
+        "faq2"
+      ]
+    }
+  },
+  "order": [
+    "main"
+  ]
+}

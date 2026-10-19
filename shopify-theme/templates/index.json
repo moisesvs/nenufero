@@ -12,12 +12,6 @@
       "type": "manifesto",
       "settings": {}
     },
-    "collection": {
-      "type": "featured-collection",
-      "settings": {
-        "limit": 4
-      }
-    },
     "process": {
       "type": "process",
       "settings": {}
@@ -25,29 +19,13 @@
     "reviews": {
       "type": "reviews",
       "settings": {}
-    },
-    "faq": {
-      "type": "faq",
-      "settings": {}
-    },
-    "contact": {
-      "type": "contact",
-      "settings": {}
-    },
-    "materials": {
-      "type": "material-categories",
-      "settings": {}
     }
   },
   "order": [
     "hero",
     "services",
     "manifesto",
-    "collection",
-    "materials",
     "process",
-    "reviews",
-    "faq",
-    "contact"
+    "reviews"
   ]
 }

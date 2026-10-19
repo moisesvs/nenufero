@@ -1,0 +1,16 @@
+<section class="purchase-hub section-shell">
+  <nav class="breadcrumbs" aria-label="Ruta"><a href="{{ routes.root_url }}">Inicio</a><span>/</span><span aria-current="page">{{ page.title | escape }}</span></nav>
+  <header class="purchase-hub-hero"><div><p class="eyebrow">{{ section.settings.kicker | escape }}</p><h1>{{ section.settings.heading | escape | newline_to_br }}</h1><p>{{ section.settings.copy | escape }}</p></div><div class="hub-location"><img src="{{ 'nenufero-logo.png' | asset_url }}" alt=""><span>Diseñado y producido<br>en Madrid</span></div></header>
+  <div class="purchase-hub-grid">
+    {% assign journey_handles = 'personalizados,rotulos-luminosos,gran-formato,vinilo-por-metros,pvc-metacrilato,corte-laser,proyecto-a-medida' | split: ',' %}
+    {% assign journey_titles = 'Personalizados|Rótulos luminosos|Gran formato|Vinilo por metros|PVC y metacrilato|Corte láser|Proyecto a medida' | split: '|' %}
+    {% assign journey_copy = 'Camisetas, tazas y objetos con tu diseño.|Letras, cajas de luz y rótulos retroiluminados.|Vinilos impresos, lonas y gráficas para espacios.|Elige acabado y cantidad para el material que buscas.|Planchas, piezas cortadas y fresadas a medida.|Piezas de precisión a partir de tu idea o archivo.|Sube una referencia y pide una visita al taller.' | split: '|' %}
+    {% for handle in journey_handles %}
+      <a class="purchase-hub-card purchase-hub-card-{{ forloop.index }}" href="{{ routes.root_url }}pages/{{ handle }}"><div class="purchase-card-art"><span>0{{ forloop.index }}</span><b aria-hidden="true">{% if forloop.index == 1 %}N/{% elsif forloop.index == 2 %}↗{% elsif forloop.index == 3 %}M²{% elsif forloop.index == 4 %}V/{% elsif forloop.index == 5 %}PVC{% elsif forloop.index == 6 %}⌁{% else %}✳{% endif %}</b></div><div class="purchase-card-copy"><p class="eyebrow">{% if forloop.index == 7 %}Hablemos{% else %}Comprar por categoría{% endif %}</p><h2>{{ journey_titles[forloop.index0] }}</h2><p>{{ journey_copy[forloop.index0] }}</p><span>Explorar <b>↗</b></span></div></a>
+    {% endfor %}
+  </div>
+  <section class="purchase-hub-contact"><div><p class="eyebrow">¿Necesitas que te orientemos?</p><h2>Una persona del taller<br>te ayuda a elegir.</h2></div><a class="button button-dark" href="{{ routes.root_url }}pages/proyecto-a-medida">Cuéntanos tu idea <span>↗</span></a></section>
+</section>
+{% schema %}
+{"name":"Tienda online · categorías","settings":[{"type":"text","id":"kicker","label":"Introducción","default":"Elige tu forma de comprar"},{"type":"textarea","id":"heading","label":"Titular","default":"Una idea,\nsu propio camino."},{"type":"textarea","id":"copy","label":"Descripción","default":"Compra productos personalizados, pide materiales por medida o habla con el taller. Cada proyecto empieza en el lugar que mejor encaja."}],"presets":[{"name":"Tienda online · categorías"}]}
+{% endschema %}

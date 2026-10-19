@@ -1,0 +1,11 @@
+{
+  "sections": {
+    "main": {
+      "type": "purchase-hub",
+      "settings": {}
+    }
+  },
+  "order": [
+    "main"
+  ]
+}

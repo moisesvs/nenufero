@@ -1,24 +1,34 @@
-# Prototipo local de Nenufero
+# Nenufero — propuesta local y tema Shopify
 
-Esta carpeta contiene un rediseño navegable para revisar y presentar. No publica cambios en la web actual.
+El proyecto conserva una portada corporativa y presenta la tienda como experiencias separadas por tipo de compra. La portada no muestra catálogo, configuradores ni formulario de pedido.
 
-## Abrir la propuesta
+## Revisar en local
 
-- En tu equipo, abre `index.html` en Chrome, Safari u otro navegador. Si el doble clic no lo abre, arrastra el archivo a una ventana del navegador o usa **Archivo → Abrir**.
-- Para compartirla, envía `nenufero-prototipo-presentacion.zip`; al extraerlo, abre el `index.html` incluido.
-- Para editar el diseño, modifica `index.html`, `styles.css`, `brand.css` y `app.js`. Las imágenes están en `public/assets/`, incluido el logotipo oficial suministrado por la empresa.
+- Abre [http://127.0.0.1:8765/](http://127.0.0.1:8765/) mientras el servidor local esté activo.
+- La tienda local está en `tienda/index.html`. Cada categoría tiene una página propia dentro de `tienda/` y comparte `experience.js` y `experience.css`.
+- Para compartir la propuesta, usa `nenufero-prototipo-presentacion.zip`; incluye la web y las páginas de compra.
+- Los pedidos y referencias del prototipo son demostrativos. El sitio local no guarda archivos en un servidor de negocio ni procesa pagos. Las visitas se solicitan y quedan pendientes de confirmación.
 
-La portada y sus imágenes usan rutas relativas para funcionar en local. El prototipo permite configurar vinilo por metros, PVC y metacrilato a medida, y corte láser; preparar un pedido; seleccionar un archivo de referencia; pedir presupuesto por WhatsApp; y proponer fecha para visitar el taller. En dispositivos compatibles, la hoja de compartir permite enviar el archivo junto con la consulta. Las solicitudes de cita quedan pendientes de confirmación.
+## Experiencias incluidas
 
-El prototipo local no procesa pagos. Los precios, el stock, los formatos disponibles y las condiciones deben cargarse en el catálogo de Shopify antes de cobrar. El tema Shopify muestra variantes, precios e inventario reales, añade archivos de referencia a cada producto del pedido y dirige al checkout de la tienda. Para configurar pagos, activa Shopify Payments o el proveedor que use la empresa en **Configuración → Pagos**. Define medidas y grosores cobrables como variantes de producto con su precio real; los trabajos con precio variable deben confirmarse primero por presupuesto.
+- Personalizados: camisetas, tazas y objetos.
+- Rótulos luminosos y retroiluminados.
+- Impresión de gran formato, vinilo impreso y lonas.
+- Vinilo por metros.
+- PVC y metacrilato cortados o fresados.
+- Corte láser.
+- Proyecto a medida con archivo de referencia y solicitud de visita.
 
-En el editor de Shopify, asigna las colecciones de vinilo por metros, PVC y metacrilato, y corte láser a la sección “Categorías de materiales”. Añade “Materiales” al menú principal. Configura el email y el teléfono de atención de la tienda en sus ajustes.
+## Preparar Shopify
 
-Las dos imágenes principales son propuestas visuales generadas para el prototipo. Se pueden reemplazar por fotografías y producto reales conservando las mismas rutas.
+El tema `shopify-theme/` usa productos, variantes, inventario y precios de Shopify. Cada compra se realiza desde la ficha del producto y el checkout de la tienda. Las medidas y acabados con precio fijo se deben definir como variantes; los trabajos con precio variable pasan por presupuesto antes de pagar. Los archivos de referencia del producto se asocian al artículo del carrito.
 
-## Temas de plataforma opcionales
+En Shopify Admin:
 
-- `wordpress-theme/` y `nenufero-wordpress-theme.zip`: tema para la web corporativa WordPress.
-- `shopify-theme/` y `nenufero-shopify-theme.zip`: tema Shopify que lee el catálogo real de la tienda.
+1. Crea las páginas `tienda-online`, `personalizados`, `rotulos-luminosos`, `gran-formato`, `vinilo-por-metros`, `pvc-metacrilato`, `corte-laser` y `proyecto-a-medida`.
+2. Asigna a cada página su plantilla `page.*.json` correspondiente.
+3. Crea colecciones con sus productos y variantes. Asigna cada colección a la sección de la página correspondiente desde el editor del tema.
+4. Añade “Tienda online” y “Tu proyecto” al menú principal, y configura el teléfono y el email de la tienda.
+5. Activa Shopify Payments o el proveedor de pago elegido en **Configuración → Pagos** y verifica el checkout desde Shopify.
 
-Estos temas son entregables aparte; el prototipo local no depende de ellos.
+El prototipo local no cambia ni publica la tienda activa. Los ZIP están disponibles en `nenufero-prototipo-presentacion.zip` y `nenufero-shopify-theme.zip`.

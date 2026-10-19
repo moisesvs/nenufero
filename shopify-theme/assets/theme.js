@@ -304,6 +304,26 @@
     preview.append(element("span", "", `${file.name} · ${(file.size / (1024 * 1024)).toFixed(1)} MB`));
   }));
 
+  document.querySelectorAll("[data-email-submit]").forEach((button) => button.addEventListener("click", () => {
+    const form = button.closest("form");
+    const error = form?.querySelector("[data-form-error]");
+    if (!form || !error || !form.reportValidity()) return;
+    const recipient = String(form.dataset.shopEmail || "").trim();
+    if (!recipient) { error.textContent = "No se ha configurado el email de contacto de la tienda."; return; }
+    const data = new FormData(form);
+    const fields = [
+      `Nombre: ${String(data.get("name") || "").trim()}`,
+      `Teléfono: ${String(data.get("phone") || "").trim()}`,
+      data.get("email") ? `Email: ${String(data.get("email")).trim()}` : "",
+      `Proyecto: ${String(data.get("service") || "").trim()}`,
+      data.get("visit") ? `Fecha de visita preferida: ${new Date(data.get("visit")).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" })}` : "",
+      data.get("reference") instanceof File && data.get("reference").name ? `Archivo de referencia: ${data.get("reference").name} (adjúntalo a este correo).` : "",
+      `Detalles: ${String(data.get("details") || "").trim()}`
+    ].filter(Boolean).join("\n");
+    const subject = `Consulta para Nenufero · ${String(data.get("service") || "Proyecto").trim()}`;
+    window.location.href = `mailto:${encodeURIComponent(recipient)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(fields)}`;
+  }));
+
   document.querySelectorAll("[data-visit-date]").forEach((input) => {
     const local = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     input.min = local;

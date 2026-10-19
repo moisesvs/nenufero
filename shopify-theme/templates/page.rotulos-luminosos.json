@@ -1,0 +1,69 @@
+{
+  "sections": {
+    "main": {
+      "type": "purchase-experience",
+      "settings": {
+        "mode": "catalog",
+        "visual": "sign",
+        "kicker": "Rótulos luminosos",
+        "heading": "Una marca que se ve de día y de noche.",
+        "copy": "<p>Letras corpóreas, cajas de luz y rótulos retroiluminados. Comparte una referencia y contacta con el taller para revisar espacio e instalación.</p>",
+        "image": "",
+        "image_caption": "DISEÑADO Y PRODUCIDO EN MADRID",
+        "catalog_kicker": "Productos disponibles",
+        "catalog_heading": "Rótulos y letras luminosas",
+        "collection": "",
+        "empty_heading": "Estamos preparando esta colección.",
+        "empty_copy": "Asigna la colección de esta experiencia en el editor de Shopify para mostrar productos, variantes y precios.",
+        "request_note": "Pide presupuesto o solicita una visita."
+      },
+      "blocks": {
+        "step1": {
+          "type": "step",
+          "settings": {
+            "title": "Elige opciones",
+            "copy": "Selecciona una variante con precio y disponibilidad visibles."
+          }
+        },
+        "step2": {
+          "type": "step",
+          "settings": {
+            "title": "Añade al carrito",
+            "copy": "Revisa el artículo, las unidades y el archivo de referencia."
+          }
+        },
+        "step3": {
+          "type": "step",
+          "settings": {
+            "title": "Paga online",
+            "copy": "Completa el pedido desde el checkout de Shopify."
+          }
+        },
+        "faq1": {
+          "type": "faq",
+          "settings": {
+            "question": "¿Incluye instalación?",
+            "answer": "Las opciones de montaje se confirman según el tipo de rótulo y el lugar donde irá instalado."
+          }
+        },
+        "faq2": {
+          "type": "faq",
+          "settings": {
+            "question": "¿Cómo se calcula el precio?",
+            "answer": "Medidas, iluminación y montaje afectan al presupuesto. El taller revisa los trabajos a medida antes del pago."
+          }
+        }
+      },
+      "block_order": [
+        "step1",
+        "step2",
+        "step3",
+        "faq1",
+        "faq2"
+      ]
+    }
+  },
+  "order": [
+    "main"
+  ]
+}

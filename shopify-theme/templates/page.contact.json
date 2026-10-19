@@ -1,1 +1,69 @@
-{"sections":{"main":{"type":"contact","settings":{}},"page":{"type":"main-page","settings":{}}},"order":["main","page"]}
+{
+  "sections": {
+    "main": {
+      "type": "purchase-experience",
+      "settings": {
+        "mode": "quote",
+        "visual": "idea",
+        "kicker": "Contacto",
+        "heading": "Cuéntanos qué necesitas.",
+        "copy": "<p>Sube una referencia, describe tu proyecto o solicita una visita. El equipo te responderá para confirmar los siguientes pasos.</p>",
+        "image": "",
+        "image_caption": "HABLAMOS ANTES DE PRODUCIR",
+        "catalog_kicker": "",
+        "catalog_heading": "",
+        "collection": "",
+        "empty_heading": "",
+        "empty_copy": "",
+        "request_note": "La fecha de visita y el presupuesto quedan pendientes de confirmación."
+      },
+      "blocks": {
+        "step1": {
+          "type": "step",
+          "settings": {
+            "title": "Cuéntanos la idea",
+            "copy": "Añade una foto, describe el uso o pide una visita al taller."
+          }
+        },
+        "step2": {
+          "type": "step",
+          "settings": {
+            "title": "Revisamos opciones",
+            "copy": "El equipo te aconseja sobre materiales, diseño y producción."
+          }
+        },
+        "step3": {
+          "type": "step",
+          "settings": {
+            "title": "Confirmamos el presupuesto",
+            "copy": "Recibirás precio y condiciones antes de confirmar el trabajo."
+          }
+        },
+        "faq1": {
+          "type": "faq",
+          "settings": {
+            "question": "¿La visita queda confirmada al elegir una fecha?",
+            "answer": "No. La fecha indicada es una preferencia; el equipo te contactará para confirmar la cita."
+          }
+        },
+        "faq2": {
+          "type": "faq",
+          "settings": {
+            "question": "¿Cómo adjunto la imagen?",
+            "answer": "En móviles compatibles puedes compartirla junto con el mensaje de WhatsApp; también puedes escribir por email y adjuntarla manualmente."
+          }
+        }
+      },
+      "block_order": [
+        "step1",
+        "step2",
+        "step3",
+        "faq1",
+        "faq2"
+      ]
+    }
+  },
+  "order": [
+    "main"
+  ]
+}
