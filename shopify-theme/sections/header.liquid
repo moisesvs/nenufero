@@ -7,6 +7,7 @@
   <nav class="main-nav" id="PrimaryNav" aria-label="Navegación principal">
     {% if section.settings.menu != blank and section.settings.menu.links.size > 0 %}{% for link in section.settings.menu.links %}<a href="{{ link.url }}"{% if link.active %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>{% endfor %}{% else %}<a href="{{ routes.root_url }}">Inicio</a><a href="{{ routes.root_url }}#servicios">Servicios</a><a href="{{ routes.root_url }}pages/tienda-online">Tienda online</a><a href="{{ routes.root_url }}pages/proyecto-a-medida">Tu proyecto</a>{% endif %}
   </nav>
+  <a class="header-store-link" href="{{ routes.root_url }}pages/tienda-online"><span>Comprar online</span><span aria-hidden="true">↗</span></a>
   <button class="bag-button" type="button" data-cart-open aria-label="Abrir carrito, {{ cart.item_count }} productos"><span>Mi pedido</span><span class="bag-count" data-cart-count>{{ cart.item_count }}</span></button>
 </header>
 {% schema %}

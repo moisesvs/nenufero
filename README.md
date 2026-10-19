@@ -4,6 +4,8 @@ El proyecto conserva una portada corporativa y presenta la tienda como experienc
 
 La imagen principal de la portada funciona como galería: usa las flechas, los números o el gesto de deslizar en móvil para cambiar de foto.
 
+La tienda se destaca en el botón fijo de la cabecera, en el CTA azul de portada, en el acceso después de los servicios y en el pie. Cada experiencia de compra conserva su catálogo o formulario en su propia página.
+
 ## Revisar en local
 
 - Abre [http://127.0.0.1:8765/](http://127.0.0.1:8765/) mientras el servidor local esté activo.

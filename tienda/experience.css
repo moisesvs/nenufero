@@ -2,3 +2,10 @@
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important}}
 .experience-faq{display:grid;grid-template-columns:.7fr 1.3fr;gap:30px;padding:24px 0 45px;border-top:1px solid var(--line)}.experience-faq>.eyebrow{margin:5px 0}.experience-faq details{border-bottom:1px solid var(--line)}.experience-faq details:first-child{border-top:1px solid var(--line)}.experience-faq summary{display:flex;justify-content:space-between;gap:18px;list-style:none;padding:13px 0;font-size:10px;font-weight:700;cursor:pointer}.experience-faq summary::-webkit-details-marker{display:none}.experience-faq summary span{color:var(--blue);font-size:14px}.experience-faq details p{max-width:640px;margin:0;padding:0 24px 13px 0;color:#71726b;font-size:9px;line-height:1.75}
 @media(max-width:640px){.experience-faq{grid-template-columns:1fr;gap:12px;padding:19px 0 33px}.experience-faq summary{font-size:9px;padding:12px 0}.experience-faq details p{font-size:8px}}
+/* Acceso permanente a la tienda y al pedido en todas las experiencias */
+.store-header{position:sticky;top:0;z-index:20}
+.store-quick-link{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:38px;padding:0 12px;background:var(--blue);color:#fff;font-size:9px;font-weight:700;white-space:nowrap}
+.store-quick-link:hover{background:#1237aa;color:#fff}
+@media(max-width:640px){.store-quick-link{min-height:31px;padding:0 8px;gap:5px;font-size:8px}.store-nav{top:68px}}
+
+@media(min-width:641px) and (max-width:900px){.store-header{gap:18px;padding-left:4vw;padding-right:4vw}.store-nav{gap:17px;font-size:10px}.store-logo img{width:42px;height:40px}.store-quick-link{padding:0 9px;font-size:8px}}
