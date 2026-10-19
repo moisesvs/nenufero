@@ -2,6 +2,8 @@
 
 Propuesta de tienda y experiencia de compra para revisión en localhost. No publica cambios en la web de Nenufero.
 
+Desde el enlace **Personalizar la propuesta** del pie de página puedes cambiar el logotipo, el nombre, los textos principales, las dos imágenes destacadas y las cuatro actividades de la portada. Esos cambios se guardan solo en el navegador actual; el editor sirve para preparar y presentar una variante local, no sustituye a un CMS ni publica cambios en internet.
+
 ## Arranque
 
 Requiere Node.js 20 o superior. Ejecuta `npm start` desde la carpeta del proyecto y abre http://127.0.0.1:8765. El carrito, los pedidos de prueba, las solicitudes y las subidas se guardan localmente en `data/` (excluido de Git).

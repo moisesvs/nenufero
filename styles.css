@@ -51,6 +51,8 @@
 .header-store-link{min-height:46px;padding:0 17px;font-size:11px;letter-spacing:.01em}
 .header-cart-link{gap:9px;font-size:11px;font-weight:700}
 .header-cart-link b{min-width:28px;height:28px;font-size:10px}
+.footer-editor-link{display:inline-block;margin-top:8px;color:#1747db;font-size:9px;text-decoration:underline;text-underline-offset:3px}
+.faq{scroll-margin-top:110px}
 @media(max-width:900px){
   .site-header{height:88px;padding-right:5vw;padding-left:5vw;gap:16px}
   .site-header .brand-symbol{width:58px;height:54px}

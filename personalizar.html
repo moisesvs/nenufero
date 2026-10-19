@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f4ef">
+  <meta name="description" content="Personaliza la identidad y los servicios de la propuesta local de Nenufero.">
+  <title>Personalizar propuesta | Nenufero</title>
+  <link rel="icon" href="public/assets/nenufero-logo.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="brand.css">
+  <link rel="stylesheet" href="personalizar.css">
+</head>
+<body class="customizer-page">
+  <a class="skip-link" href="#editor">Saltar al editor</a>
+  <div class="topline"><span>Herramienta local de presentación</span><a href="index.html">Volver a la web <span aria-hidden="true">↗</span></a></div>
+  <header class="editor-header"><a class="brand-lockup editor-brand" href="index.html"><img class="brand-symbol" src="public/assets/nenufero-logo.png" alt=""><span class="wordmark-name">NENUFERO</span></a><span class="editor-badge">Solo para esta presentación local</span></header>
+  <main class="editor-shell" id="editor">
+    <div class="editor-intro"><p class="eyebrow">IDENTIDAD Y ACTIVIDAD</p><h1>Adapta la marca<br><span>a tu proyecto.</span></h1><p>Cambia el logotipo, el mensaje principal, las imágenes destacadas y las cuatro actividades de la portada. Los cambios se guardan en este navegador.</p></div>
+    <form id="presentation-form">
+      <section class="editor-section"><div class="editor-section-heading"><span>01</span><div><h2>Identidad</h2><p>Nombre, logo y mensaje que presenta la marca.</p></div></div><div class="editor-fields editor-fields-two">
+        <label>Nombre de la marca<input name="brandName" maxlength="32" required></label>
+        <label>Frase de marca<input name="tagline" maxlength="90" required></label>
+        <label>Primera línea del titular<input name="headline0" maxlength="55" required></label>
+        <label>Segunda línea del titular<input name="headline1" maxlength="55" required></label>
+        <label class="field-wide">Presentación breve<textarea name="intro" maxlength="260" rows="3" required></textarea></label>
+        <label class="field-wide">Logotipo (PNG o JPG, máximo 500 KB)<input name="logo" type="file" accept="image/png,image/jpeg"><span class="field-hint">Si no subes otro, se conserva el logo actual.</span><img class="logo-preview" data-logo-preview src="public/assets/nenufero-logo.png" alt="Vista previa del logo"></label>
+      </div></section>
+      <section class="editor-section"><div class="editor-section-heading"><span>02</span><div><h2>Actividades de la marca</h2><p>Edita las cuatro tarjetas de servicios de la portada y a qué página llevan.</p></div></div><div class="service-editor-grid" data-service-fields></div></section>
+      <section class="editor-section"><div class="editor-section-heading"><span>03</span><div><h2>Imágenes destacadas</h2><p>Cambia las dos imágenes y sus pies de foto. Se optimizan en este navegador antes de guardarse.</p></div></div><div class="slide-editor-grid" data-slide-fields></div></section>
+      <p class="editor-notice" role="status" data-editor-status>Estos ajustes solo cambian la vista local de este navegador. No modifican el sitio publicado.</p>
+      <div class="editor-actions"><button class="button button-dark" type="submit">Guardar cambios <span aria-hidden="true">↗</span></button><button class="button button-outline" type="button" data-reset>Restaurar propuesta inicial</button><a class="editor-preview-link" href="index.html">Abrir portada <span aria-hidden="true">↗</span></a></div>
+    </form>
+  </main>
+  <footer class="editor-footer"><img src="public/assets/nenufero-logo.png" alt="Nenufero"><span>Editor de presentación local</span></footer>
+  <script src="site-brand.js" defer></script>
+  <script src="personalizar.js" defer></script>
+</body>
+</html>
