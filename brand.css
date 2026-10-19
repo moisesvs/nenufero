@@ -4,6 +4,11 @@
 .wordmark-name{display:inline-block;color:inherit;font:inherit;line-height:1;letter-spacing:inherit}
 .site-header .brand-symbol{width:52px;height:48px}
 .site-header .wordmark-name{font-size:15px}
+.site-header .brand-symbol{width:68px;height:62px}
+.site-header .wordmark-name{font-size:22px;font-weight:800;letter-spacing:-.065em}
+@media(max-width:900px){.site-header .brand-symbol{width:58px;height:54px}.site-header .wordmark-name{font-size:19px}}
+@media(max-width:680px){.site-header .brand-lockup{gap:7px}.site-header .brand-symbol{width:46px;height:43px}.site-header .wordmark-name{font-size:16px;letter-spacing:-.055em}}
+@media(max-width:380px){.site-header .brand-lockup{gap:5px}.site-header .brand-symbol{width:36px;height:34px}.site-header .wordmark-name{font-size:14px}}
 .footer-wordmark .brand-symbol{width:44px;height:40px}
 .footer-wordmark .wordmark-name{font-size:31px}
 .error-mark{margin-bottom:26px}
