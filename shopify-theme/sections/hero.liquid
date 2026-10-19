@@ -1,7 +1,14 @@
 {% assign hero_primary_url = section.settings.primary_link %}{% if hero_primary_url == blank %}{% assign hero_primary_url = routes.root_url | append: 'pages/proyecto-a-medida' %}{% endif %}{% assign hero_secondary_url = section.settings.secondary_link %}{% if hero_secondary_url == blank %}{% assign hero_secondary_url = routes.root_url | append: 'pages/tienda-online' %}{% endif %}
 <section class="hero section-shell">
   <div class="hero-copy"><p class="eyebrow"><span class="status-dot"></span>{{ section.settings.kicker | escape }}</p><h1>{{ section.settings.heading | escape | newline_to_br }}</h1><div class="hero-intro">{{ section.settings.copy }}</div><div class="hero-actions"><a class="button button-dark" href="{{ hero_primary_url }}">{{ section.settings.primary_label | escape }} <span aria-hidden="true">↗</span></a><a class="text-link" href="{{ hero_secondary_url }}">{{ section.settings.secondary_label | escape }} <span aria-hidden="true">↓</span></a></div><div class="hero-proof"><span class="proof-mark"><img src="{{ 'nenufero-logo.png' | asset_url }}" alt=""></span><p>{{ section.settings.proof | newline_to_br }}</p><span class="proof-divider"></span><p class="proof-location">Villaverde<br>Madrid, España</p></div></div>
-  <div class="hero-visual">{% if section.settings.image != blank %}{{ section.settings.image | image_url: width: 1600 | image_tag: widths: '600, 900, 1200, 1600', sizes: '(min-width: 800px) 52vw, 100vw', loading: 'eager', fetchpriority: 'high', alt: section.settings.image.alt }}{% else %}<img src="{{ 'hero-workshop.png' | asset_url }}" alt="" width="1536" height="1024" fetchpriority="high">{% endif %}<div class="image-label"><span>{{ section.settings.image_caption | escape }}</span><span>ESTUDIO DE IMPRESIÓN</span></div><div class="image-note"><span class="note-star">✳</span><span>Una idea tuya.<br>Manos expertas aquí.</span></div></div>
+  <div class="hero-gallery" data-hero-gallery tabindex="0" aria-label="Galería de trabajos de Nenufero">
+    <div class="hero-visual">
+      <figure class="hero-slide is-active" data-gallery-slide aria-hidden="false">{% if section.settings.image != blank %}{{ section.settings.image | image_url: width: 1600 | image_tag: widths: '600, 900, 1200, 1600', sizes: '(min-width: 800px) 52vw, 100vw', loading: 'eager', fetchpriority: 'high', alt: section.settings.image.alt }}{% else %}<img src="{{ 'hero-workshop.png' | asset_url }}" alt="Profesional de Nenufero aplicando vinilo en un vehículo" width="1536" height="1024" fetchpriority="high">{% endif %}<figcaption class="image-label"><span>{{ section.settings.image_caption | escape }}</span><span>HECHO EN MADRID</span></figcaption></figure>
+      <figure class="hero-slide" data-gallery-slide aria-hidden="true" hidden>{% if section.settings.image_secondary != blank %}{{ section.settings.image_secondary | image_url: width: 1600 | image_tag: widths: '600, 900, 1200, 1600', sizes: '(min-width: 800px) 52vw, 100vw', loading: 'lazy', alt: section.settings.image_secondary.alt }}{% else %}<img src="{{ 'camiseta-azul.png' | asset_url }}" alt="Camiseta azul personalizada, ejemplo de impresión textil" width="1024" height="1536" loading="lazy">{% endif %}<figcaption class="image-label"><span>{{ section.settings.image_caption_secondary | escape }}</span><span>HECHO A TU MEDIDA</span></figcaption></figure>
+      <div class="image-note"><span class="note-star">✳</span><span>Una idea tuya.<br>Manos expertas aquí.</span></div>
+    </div>
+    <div class="hero-gallery-controls" aria-label="Controles de la galería"><button class="gallery-arrow" type="button" data-gallery-previous aria-label="Imagen anterior">←</button><div class="gallery-pagination" data-gallery-pagination role="group" aria-label="Elegir imagen"><button type="button" class="gallery-dot is-active" data-gallery-go="0" aria-label="Mostrar imagen 1" aria-current="true">01</button><button type="button" class="gallery-dot" data-gallery-go="1" aria-label="Mostrar imagen 2">02</button></div><span class="gallery-count" data-gallery-count aria-live="polite">01 <span>/</span> 02</span><button class="gallery-arrow" type="button" data-gallery-next aria-label="Imagen siguiente">→</button></div>
+  </div>
 </section>
 {% schema %}
 {"name":"Portada Nenufero","settings":[
@@ -13,7 +20,9 @@
   {"type":"text","id":"secondary_label","label":"Botón secundario","default":"Explorar tienda online"},
   {"type":"url","id":"secondary_link","label":"Enlace secundario"},
   {"type":"textarea","id":"proof","label":"Texto de confianza","default":"Un solo equipo para hacer visible\ntodo lo que tienes entre manos."},
-  {"type":"image_picker","id":"image","label":"Imagen de portada"},
-  {"type":"text","id":"image_caption","label":"Pie de imagen","default":"01 / ROTULACIÓN"}
+  {"type":"image_picker","id":"image","label":"Primera imagen de la galería"},
+  {"type":"text","id":"image_caption","label":"Pie de la primera imagen","default":"01 / ROTULACIÓN"},
+  {"type":"image_picker","id":"image_secondary","label":"Segunda imagen de la galería"},
+  {"type":"text","id":"image_caption_secondary","label":"Pie de la segunda imagen","default":"02 / TEXTIL PERSONALIZADO"}
 ],"presets":[{"name":"Portada Nenufero"}]}
 {% endschema %}

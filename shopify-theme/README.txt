@@ -2,6 +2,8 @@ NENUFERO — configuración del tema Shopify
 
 La portada es corporativa. Las compras viven en páginas propias para que cada categoría tenga su recorrido y su catálogo.
 
+La imagen de portada incluye una galería navegable. En el editor de Shopify se pueden sustituir la primera y la segunda imagen y editar sus pies de foto.
+
 Antes de activar el tema:
 1. Crea páginas con estos handles y asigna la plantilla indicada:
    tienda-online → page.tienda-online.json

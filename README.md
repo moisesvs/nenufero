@@ -2,6 +2,8 @@
 
 El proyecto conserva una portada corporativa y presenta la tienda como experiencias separadas por tipo de compra. La portada no muestra catálogo, configuradores ni formulario de pedido.
 
+La imagen principal de la portada funciona como galería: usa las flechas, los números o el gesto de deslizar en móvil para cambiar de foto.
+
 ## Revisar en local
 
 - Abre [http://127.0.0.1:8765/](http://127.0.0.1:8765/) mientras el servidor local esté activo.
