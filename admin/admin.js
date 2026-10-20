@@ -8,6 +8,7 @@ const ordersList = document.querySelector("#orders-list");
 const productsList = document.querySelector("#products-list");
 const orderSearch = document.querySelector("#order-search");
 const orderFilter = document.querySelector("#order-filter");
+const productSearch = document.querySelector("#product-search");
 let orders = [];
 let products = [];
 let catalogSource = "local";
@@ -107,10 +108,16 @@ function renderOrders() {
 }
 
 function renderProducts() {
+  const query = productSearch.value.trim().toLocaleLowerCase("es");
+  const visibleProducts = products.filter((product) => {
+    const variantTerms = (product.variants || []).flatMap((variant) => [variant.sku, variant.barcode, variant.title]);
+    const text = [product.title, product.sku, product.handle, product.id, product.category, product.vendor, ...(product.tags || []), ...variantTerms].join(" ").toLocaleLowerCase("es");
+    return !query || text.includes(query);
+  });
   const header = document.querySelector(".product-table thead");
   if (catalogSource === "shopify") {
     header.innerHTML = "<tr><th>Producto</th><th>Marca y tipo</th><th>Etiquetas y estado</th><th>Variantes, precio e inventario</th><th></th></tr>";
-    productsList.innerHTML = products.map((product) => `<tr data-sku="${escapeHtml(product.id)}" class="shopify-product-row">
+    productsList.innerHTML = visibleProducts.map((product) => `<tr data-sku="${escapeHtml(product.id)}" class="shopify-product-row">
       <td><label class="shopify-product-field">Nombre<input type="text" data-field="title" value="${escapeHtml(product.title)}" maxlength="255"></label><label class="shopify-product-field">Descripción HTML<textarea data-field="descriptionHtml" maxlength="40000">${escapeHtml(product.descriptionHtml)}</textarea></label><span class="product-sku">${escapeHtml(product.handle)} · ${escapeHtml(product.id)}</span></td>
       <td><label class="shopify-product-field">Marca<input type="text" data-field="vendor" value="${escapeHtml(product.vendor)}" maxlength="255"></label><label class="shopify-product-field">Tipo<input type="text" data-field="category" value="${escapeHtml(product.category)}" maxlength="255"></label></td>
       <td><label class="shopify-product-field">Etiquetas, separadas por comas<input type="text" data-field="tags" value="${escapeHtml(product.tags.join(", "))}" maxlength="2000"></label><label class="shopify-product-field">Publicación<select data-field="status"><option value="ACTIVE" ${product.status === "ACTIVE" ? "selected" : ""}>Activo</option><option value="DRAFT" ${product.status === "DRAFT" ? "selected" : ""}>Borrador</option><option value="ARCHIVED" ${product.status === "ARCHIVED" ? "selected" : ""}>Archivado</option></select></label><span class="product-sku">Inventario total: ${escapeHtml(product.totalInventory)}</span></td>
@@ -121,7 +128,7 @@ function renderProducts() {
     return;
   }
   header.innerHTML = "<tr><th>Producto y SKU</th><th>Categoría</th><th>Precio de demostración</th><th>Tarifa Stripe</th><th>Estado</th><th></th></tr>";
-  productsList.innerHTML = products.map((product) => `<tr data-sku="${escapeHtml(product.sku)}">
+  productsList.innerHTML = visibleProducts.map((product) => `<tr data-sku="${escapeHtml(product.sku)}">
     <td><input type="text" data-field="title" value="${escapeHtml(product.title)}" maxlength="120" aria-label="Nombre de ${escapeHtml(product.sku)}"><span class="product-sku">${escapeHtml(product.sku)} · ${escapeHtml(product.unit)} · ${escapeHtml(product.model)}</span></td>
     <td><input type="text" data-field="category" value="${escapeHtml(product.category)}" maxlength="80" aria-label="Categoría de ${escapeHtml(product.title)}"></td>
     <td><label class="price-input"><span class="visually-hidden">Precio de demostración</span><input type="number" data-field="demoRate" min="0.01" step="0.01" value="${(product.demoRate / 100).toFixed(2)}"></label></td>
@@ -158,6 +165,7 @@ document.querySelectorAll("[data-admin-view]").forEach((button) => button.addEve
 
 orderSearch.addEventListener("input", renderOrders);
 orderFilter.addEventListener("change", renderOrders);
+productSearch.addEventListener("input", renderProducts);
 document.querySelector("[data-refresh]").addEventListener("click", () => loadData().then(() => notify("Datos actualizados.")).catch((error) => notify(error.message, true)));
 document.querySelector("#logout-button").addEventListener("click", async () => {
   await api("/api/admin/session", { method: "DELETE" }).catch(() => {});
