@@ -44,3 +44,13 @@
 
 @media(hover:hover) and (pointer:fine){.hub-card:hover .hub-card-link b,.experience-next>div>a:hover span,.button:hover>span[aria-hidden="true"]{transform:translate(3px,-2px)}}
 @media(hover:none){.hub-card:hover{transform:none}.hub-card:active{transform:translateY(-2px)}.store-quick-link:hover{transform:none}.button:hover{transform:none}.button:active{transform:translateY(1px) scale(.99)}}
+
+/* Alineación y jerarquía del encabezado común en todas las páginas de tienda. */
+.store-site-header{align-items:center}
+.store-site-header .store-brand-lockup{align-self:center}
+.store-site-header .brand-symbol{display:block}
+.store-site-header .wordmark-name{display:block;line-height:1}
+.store-site-header .store-cart-link{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;gap:9px;font-size:11px;font-weight:700;line-height:1;white-space:nowrap}
+.store-site-header .store-cart-link b{flex:0 0 auto}
+.store-site-header .store-main-nav.is-open{align-self:stretch}
+@media(max-width:640px){.store-site-header .store-cart-link{font-size:10px}}
