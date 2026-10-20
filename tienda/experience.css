@@ -46,7 +46,7 @@
 @media(hover:none){.hub-card:hover{transform:none}.hub-card:active{transform:translateY(-2px)}.store-quick-link:hover{transform:none}.button:hover{transform:none}.button:active{transform:translateY(1px) scale(.99)}}
 
 /* Alineación y jerarquía del encabezado común en todas las páginas de tienda. */
-.store-site-header{align-items:center}
+.store-site-header{display:flex;align-items:center}
 .store-site-header .store-brand-lockup{align-self:center}
 .store-site-header .brand-symbol{display:block}
 .store-site-header .wordmark-name{display:block;line-height:1}
