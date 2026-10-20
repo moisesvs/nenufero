@@ -151,6 +151,13 @@
 .gallery-art-caption{position:absolute;top:8%;left:8%;padding:9px 12px;background:rgba(246,244,239,.9);color:#181916;font-size:9px;font-weight:800;letter-spacing:.1em}
 .word-step{display:inline-block;color:rgba(246,244,239,.3);transition:color 1s var(--spring)}.word-step.is-on{color:#f6f4ef}
 @media(prefers-reduced-motion:reduce){.word-step{color:#f6f4ef}}
+
+/* Las flechas conservan una caja estable y una respuesta táctil clara. */
+.round-arrow,.gallery-arrow{line-height:1;flex:0 0 auto;font-family:Arial,sans-serif}
+.gallery-arrow{touch-action:manipulation}
+@media(hover:hover) and (pointer:fine){.service-card:hover .round-arrow{transform:translate(2px,-2px)}.gallery-arrow:hover{background:var(--ink);border-color:var(--ink);color:#fff}.text-link:hover span,.footer-cta:hover span,.button:hover>span[aria-hidden="true"]{display:inline-block;transform:translate(3px,-2px)}}
+@media(hover:none){.service-card:hover .round-arrow{transform:none}.service-card:active .round-arrow,.gallery-arrow:active{transform:scale(.94);background:var(--blue);border-color:var(--blue);color:#fff}.text-link:active span,.footer-cta:active span{display:inline-block;transform:translate(2px,-1px)}}
+@media(max-width:680px){.gallery-arrow{width:44px;height:44px;font-size:17px}.round-arrow{width:32px;height:32px;font-size:15px}}
 .review-mark{margin-left:auto;color:#8da8ff;font-size:13px;font-weight:700;letter-spacing:-.06em}
 
 /* Todas las tarjetas de servicios conservan la misma estructura y altura. */

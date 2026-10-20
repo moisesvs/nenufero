@@ -80,8 +80,8 @@ function updatePricePreview() {
 function header(count = 0) {
   const labels = { hub: "Tienda online", personalizados: "Personalizados", rotulos: "Rótulos luminosos", granformato: "Gran formato", vinilo: "Vinilo por metros", pvc: "PVC y metacrilato", laser: "Corte láser", proyecto: "Tu proyecto" };
   const shopLink = pageId === "hub" ? "" : '<a href="index.html">Tienda online</a>';
-  const pageNavigation = `<nav class="store-page-navigation" aria-label="Navegación de la página"><a class="store-page-back" href="../index.html"><span aria-hidden="true">←</span> Volver al inicio</a><div class="store-page-links"><a href="../index.html#servicios">Servicios</a>${shopLink}<a href="../index.html#proceso">Cómo trabajamos</a><a href="../faq.html">Preguntas frecuentes</a></div><span class="store-page-current" aria-current="page">${labels[pageId] || "Tienda online"}</span></nav>`;
-  return `<div class="store-announcement"><span>Estudio de impresión y rotulación en Madrid</span><a href="https://wa.me/34673629342" target="_blank" rel="noreferrer">¿Necesitas ayuda? WhatsApp ↗</a></div><header class="store-header"><a class="store-logo" href="../index.html" aria-label="Nenufero, inicio"><img src="../public/assets/nenufero-logo.png" alt=""><b>NENUFERO</b></a><button class="store-menu-button" type="button" aria-label="Abrir navegación" aria-expanded="false">Menú <span>+</span></button><nav class="store-nav"><a href="../index.html">Inicio</a><a href="index.html">Tienda online</a><a href="proyecto-a-medida.html">Tu proyecto</a></nav><a class="header-store-link store-quick-link" href="index.html"><span>Comprar online</span><span aria-hidden="true">↗</span></a><button class="order-button" type="button" data-open-order>Mi pedido <span data-order-count>${count}</span></button></header>${pageNavigation}`;
+  const pageNavigation = `<nav class="store-page-navigation" aria-label="Navegación de la página"><a class="store-page-back" href="../index.html#inicio"><span aria-hidden="true">←</span> Volver al inicio</a><div class="store-page-links"><a href="../index.html#servicios">Servicios</a>${shopLink}<a href="../index.html#proceso">Cómo trabajamos</a><a href="../faq.html">Preguntas frecuentes</a></div><span class="store-page-current" aria-current="page">${labels[pageId] || "Tienda online"}</span></nav>`;
+  return `<div class="store-announcement"><span>Estudio de impresión y rotulación en Madrid</span><a href="https://wa.me/34673629342" target="_blank" rel="noreferrer">Hablemos de tu proyecto <span aria-hidden="true">↗</span></a></div><header class="site-header store-site-header"><button class="menu-toggle store-menu-toggle" type="button" aria-label="Abrir menú" aria-expanded="false"><span></span><span></span></button><a class="wordmark brand-lockup store-brand-lockup" href="../index.html#inicio" aria-label="Nenufero, inicio"><img class="brand-symbol" src="../public/assets/nenufero-logo.png" alt=""><span class="wordmark-name">NENUFERO</span></a><nav class="main-nav store-main-nav" aria-label="Navegación principal"><a href="../index.html#servicios">Servicios</a><a href="index.html">Tienda online</a><a href="../index.html#proceso">Cómo trabajamos</a><a href="../faq.html">Preguntas frecuentes</a><a href="../index.html#contacto">Contacto</a></nav><a class="header-store-link store-quick-link" href="index.html"><span>Comprar online</span><span aria-hidden="true">↗</span></a><button class="header-cart-link store-cart-link" type="button" data-open-order aria-label="Ver mi pedido, ${count} productos"><span>Mi pedido</span><b data-order-count>${count}</b></button></header>${pageNavigation}`;
 }
 
 function footer() {
@@ -121,12 +121,19 @@ app.insertAdjacentHTML("beforebegin", header(store.read().reduce((sum, item) => 
 app.innerHTML = pageId === "hub" ? renderHub() : renderExperience(journeys[pageId] || journeys.proyecto);
 document.body.insertAdjacentHTML("beforeend", `${footer()}${drawerMarkup()}`);
 
-const menuToggle = document.querySelector(".store-menu-button");
+const menuToggle = document.querySelector(".store-menu-toggle");
+const storeNav = document.querySelector(".store-main-nav");
 menuToggle.addEventListener("click", () => {
   const open = menuToggle.getAttribute("aria-expanded") === "true";
   menuToggle.setAttribute("aria-expanded", String(!open));
-  document.querySelector(".store-nav").classList.toggle("is-open", !open);
+  menuToggle.setAttribute("aria-label", open ? "Abrir menú" : "Cerrar menú");
+  storeNav.classList.toggle("is-open", !open);
 });
+storeNav.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => {
+  menuToggle.setAttribute("aria-expanded", "false");
+  menuToggle.setAttribute("aria-label", "Abrir menú");
+  storeNav.classList.remove("is-open");
+}));
 
 const orderDrawer = document.querySelector("[data-order-drawer]");
 const overlay = document.querySelector("[data-order-overlay]");
