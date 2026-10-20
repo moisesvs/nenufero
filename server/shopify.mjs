@@ -76,13 +76,15 @@ function noteForShopify(note = "", adminNote = "") {
 }
 
 function orderStatus(tags = [], fulfillment = "") {
+  if (fulfillment === "CANCELLED") return "cancelled";
+  if (fulfillment === "FULFILLED") return "completed";
   const value = tags.find((tag) => tag.startsWith(STATUS_TAG_PREFIX))?.slice(STATUS_TAG_PREFIX.length);
   if (["new", "confirmed", "in_production", "ready", "completed", "cancelled"].includes(value)) return value;
   return ({ FULFILLED: "completed", PARTIALLY_FULFILLED: "in_production", IN_PROGRESS: "in_production", UNFULFILLED: "confirmed", CANCELLED: "cancelled" })[fulfillment] || "new";
 }
 
 const ORDER_FIELDS = `
-  id legacyResourceId name createdAt updatedAt email phone note tags
+  id legacyResourceId name createdAt updatedAt cancelledAt email phone note tags
   displayFinancialStatus displayFulfillmentStatus
   currentSubtotalPriceSet { shopMoney { amount currencyCode } }
   currentShippingPriceSet { shopMoney { amount currencyCode } }
@@ -121,6 +123,7 @@ function normalizeOrder(order, lineItems = order.lineItems.nodes) {
     id: String(order.legacyResourceId), source: "shopify", shopifyGid: order.id,
     orderName: order.name, createdAt: order.createdAt, updatedAt: order.updatedAt,
     fulfillmentStatus: orderStatus(order.tags, order.displayFulfillmentStatus), shopifyFulfillmentStatus: order.displayFulfillmentStatus,
+    cancelledAt: order.cancelledAt || null,
     paymentStatus: String(order.displayFinancialStatus || "pending").toLowerCase(),
     customer: { name: order.customer?.displayName || "Cliente", email: order.email || order.customer?.email || "", phone: order.phone || order.customer?.phone || "" },
     address: address ? { line1: address.address1, line2: address.address2, city: address.city, province: address.province, postalCode: address.zip, country: address.country } : null,
@@ -216,6 +219,47 @@ export async function updateShopifyOrder(legacyId, fields) {
   userErrors(data, "orderUpdate");
   const refreshed = await graphql(`query AdminOrder($id: ID!) { order(id: $id) { ${ORDER_FIELDS} } }`, { id });
   return refreshed.order ? normalizeOrder(refreshed.order, await completeOrderItems(refreshed.order)) : null;
+}
+
+async function shopifyOrderByLegacyId(legacyId) {
+  const id = `gid://shopify/Order/${legacyId}`;
+  const refreshed = await graphql(`query AdminOrder($id: ID!) { order(id: $id) { ${ORDER_FIELDS} } }`, { id });
+  return refreshed.order ? normalizeOrder(refreshed.order, await completeOrderItems(refreshed.order)) : null;
+}
+
+export async function fulfillShopifyOrder(legacyId) {
+  const id = `gid://shopify/Order/${legacyId}`;
+  const data = await graphql(`query AdminFulfillmentOrders($id: ID!) { order(id: $id) { cancelledAt displayFinancialStatus fulfillmentOrders(first: 100) { nodes { id status assignedLocation { location { id } } } pageInfo { hasNextPage endCursor } } } }`, { id });
+  const order = data.order;
+  if (!order) return null;
+  if (order.cancelledAt) throw Object.assign(new Error("No se puede preparar un pedido cancelado."), { status: 409, code: "order_cancelled" });
+  if (!["PAID", "PARTIALLY_PAID"].includes(order.displayFinancialStatus)) throw Object.assign(new Error("Shopify solo permite marcar como preparados aquí los pedidos pagados o pagados parcialmente."), { status: 409, code: "order_not_paid" });
+  const fulfillmentOrders = [...order.fulfillmentOrders.nodes];
+  if (order.fulfillmentOrders.pageInfo.hasNextPage) throw Object.assign(new Error("Este pedido tiene muchas ubicaciones de preparación. Complétalo desde Shopify."), { status: 409, code: "too_many_fulfillment_orders" });
+  const open = fulfillmentOrders.filter((item) => ["OPEN", "IN_PROGRESS"].includes(item.status) && item.assignedLocation?.location?.id);
+  if (!open.length) throw Object.assign(new Error("Shopify no muestra artículos pendientes de preparación en este pedido."), { status: 409, code: "nothing_to_fulfill" });
+  const groups = new Map();
+  for (const fulfillmentOrder of open) {
+    const locationId = fulfillmentOrder.assignedLocation.location.id;
+    groups.set(locationId, [...(groups.get(locationId) || []), fulfillmentOrder]);
+  }
+  for (const group of groups.values()) {
+    const result = await graphql(`mutation CreateFulfillment($fulfillment: FulfillmentInput!) { fulfillmentCreate(fulfillment: $fulfillment) { fulfillment { id status } userErrors { field message } } }`, {
+      fulfillment: { lineItemsByFulfillmentOrder: group.map(({ id: fulfillmentOrderId }) => ({ fulfillmentOrderId })), notifyCustomer: false }
+    });
+    userErrors(result, "fulfillmentCreate");
+  }
+  return shopifyOrderByLegacyId(legacyId);
+}
+
+export async function cancelShopifyOrder(legacyId) {
+  const id = `gid://shopify/Order/${legacyId}`;
+  const result = await graphql(`mutation CancelOrder($orderId: ID!) { orderCancel(orderId: $orderId, notifyCustomer: false, refundMethod: { originalPaymentMethodsRefund: true }, restock: true, reason: OTHER, staffNote: "Cancelación solicitada desde el panel de administración Nenufero") { job { id done } orderCancelUserErrors { field message code } userErrors { field message } } }`, { orderId: id });
+  const payload = result.orderCancel;
+  const errors = [...(payload?.orderCancelUserErrors || []), ...(payload?.userErrors || [])];
+  if (errors.length) throw Object.assign(new Error(errors.map((error) => error.message).join(" · ").slice(0, 600)), { status: 422, code: "shopify_cancel_error" });
+  const order = await shopifyOrderByLegacyId(legacyId);
+  return order ? { order, job: payload.job } : null;
 }
 
 export async function updateShopifyProduct(legacyId, fields) {

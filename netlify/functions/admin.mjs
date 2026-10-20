@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { adjustShopifyInventory, listShopifyOrders, listShopifyProducts, shopifyConfigured, updateShopifyOrder, updateShopifyProduct } from "../../server/shopify.mjs";
+import { adjustShopifyInventory, cancelShopifyOrder, fulfillShopifyOrder, listShopifyOrders, listShopifyProducts, shopifyConfigured, updateShopifyOrder, updateShopifyProduct } from "../../server/shopify.mjs";
 
 const COOKIE_NAME = "nenufero_admin";
 const SESSION_SECONDS = 8 * 60 * 60;
@@ -126,6 +126,16 @@ export async function handler(event) {
 
   try {
     if (path === "/api/admin/orders" && method === "GET") return response(200, { orders: await listShopifyOrders(), source: "shopify" });
+    const shopifyOrderAction = path.match(/^\/api\/admin\/orders\/(\d{1,24})\/(fulfill|cancel)$/);
+    if (shopifyOrderAction && method === "POST") {
+      const [, id, action] = shopifyOrderAction;
+      if (action === "fulfill") {
+        const order = await fulfillShopifyOrder(id);
+        return order ? response(200, { order }) : failure(404, "No encontramos ese pedido.", "order_not_found");
+      }
+      const result = await cancelShopifyOrder(id);
+      return result ? response(200, result) : failure(404, "No encontramos ese pedido.", "order_not_found");
+    }
     const orderMatch = path.match(/^\/api\/admin\/orders\/(\d{1,24})$/);
     if (orderMatch && method === "PATCH") {
       const body = requestBody(event);

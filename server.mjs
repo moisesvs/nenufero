@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { CURRENCY, getPublicCatalog, listAdminProducts, loadProductOverrides, paymentMode, priceCart, updateProduct } from "./server/catalog.mjs";
 import { createOrder, createRequest, findOrder, getUpload, listOrders, markEventProcessed, prepareStorage, saveUpload, updateOrder, UPLOAD_DIR } from "./server/storage.mjs";
 import { assertStripeReady, createCheckoutSession, retrieveCheckoutSession, verifyStripeSignature } from "./server/stripe.mjs";
-import { adjustShopifyInventory, listShopifyOrders, listShopifyProducts, shopifyConfigured, updateShopifyOrder, updateShopifyProduct } from "./server/shopify.mjs";
+import { adjustShopifyInventory, cancelShopifyOrder, fulfillShopifyOrder, listShopifyOrders, listShopifyProducts, shopifyConfigured, updateShopifyOrder, updateShopifyProduct } from "./server/shopify.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)));
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
@@ -166,6 +166,17 @@ async function handleAdmin(request, response, url) {
     const orders = shopifyConfigured() ? [...await listShopifyOrders(), ...localOrders] : localOrders;
     orders.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
     return send(response, 200, { orders: orders.map((order) => ({ ...order, fulfillmentStatus: order.fulfillmentStatus || "new" })), source: shopifyConfigured() ? "shopify+local" : "local" });
+  }
+  const shopifyOrderAction = path.match(/^\/api\/admin\/orders\/(\d{1,24})\/(fulfill|cancel)$/);
+  if (shopifyOrderAction && request.method === "POST") {
+    if (!shopifyConfigured()) return fail(response, 503, "Configura Shopify para gestionar pedidos de la tienda real.", "shopify_not_configured");
+    const [, id, action] = shopifyOrderAction;
+    if (action === "fulfill") {
+      const order = await fulfillShopifyOrder(id);
+      return order ? send(response, 200, { order }) : fail(response, 404, "No encontramos ese pedido.", "order_not_found");
+    }
+    const result = await cancelShopifyOrder(id);
+    return result ? send(response, 200, result) : fail(response, 404, "No encontramos ese pedido.", "order_not_found");
   }
   const orderMatch = path.match(/^\/api\/admin\/orders\/(NEN-[A-Z0-9-]{12,40}|[0-9]{1,24})$/);
   if (orderMatch && request.method === "PATCH") {

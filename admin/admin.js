@@ -60,7 +60,7 @@ function notify(message, isError = false) {
 }
 
 function renderStats() {
-  const activeOrders = orders.filter((order) => !["completed", "cancelled"].includes(order.fulfillmentStatus || "new")).length;
+  const activeOrders = orders.filter((order) => !order.cancelledAt && !["FULFILLED", "CANCELLED"].includes(order.shopifyFulfillmentStatus) && !["completed", "cancelled"].includes(order.fulfillmentStatus || "new")).length;
   const paidOrders = orders.filter((order) => order.paymentStatus === "paid").length;
   const activeProducts = products.filter((product) => product.active !== false).length;
   const stats = [
@@ -92,15 +92,17 @@ function renderOrders() {
     const paymentLabels = { paid: "PAGO CONFIRMADO", partially_paid: "PAGO PARCIAL", pending: "PENDIENTE DE PAGO", authorized: "PAGO AUTORIZADO", partially_refunded: "REEMBOLSO PARCIAL", refunded: "REEMBOLSADO", voided: "ANULADO", expired: "CADUCADO", simulated: "PEDIDO SIMULADO · SIN COBRO", failed: "PAGO FALLIDO" };
     const paymentLabel = paymentLabels[order.paymentStatus] || "ESTADO DE PAGO NO DISPONIBLE";
     const note = order.adminNote || "";
+    const shopifyActions = order.source === "shopify" && !order.cancelledAt && !order.cancelPending ? `<div class="shopify-order-actions"><strong>Acciones reales de Shopify</strong><div>${order.shopifyFulfillmentStatus !== "FULFILLED" ? `<button class="quiet-button" type="button" data-shopify-fulfill ${order.paymentStatus !== "paid" && order.paymentStatus !== "partially_paid" ? "disabled" : ""}>Marcar artículos preparados</button>` : ""}<button class="quiet-button danger-button" type="button" data-shopify-cancel>Cancelar, reembolsar y reponer stock</button></div><small>La preparación no avisa al cliente. La cancelación no envía una notificación al cliente.</small></div>` : "";
     return `<article class="order-card" data-order-id="${escapeHtml(order.id)}">
       <div><div class="order-id">${escapeHtml(order.orderName || order.id)}</div><p class="order-meta">${escapeHtml(dateText(order.createdAt))} · ${escapeHtml(itemText || "Sin artículos")}</p><span class="order-payment${order.paymentStatus === "paid" ? " is-paid" : ""}">${paymentLabel}</span></div>
       <div class="order-customer"><strong>${escapeHtml(customer.name || "Cliente sin nombre")}</strong><p class="order-contact">${escapeHtml(customer.email || "Sin email")}<br>${escapeHtml(customer.phone || "Sin teléfono")}</p></div>
       <div class="order-total">${money(order.totalCents, order.currency)}<p class="order-meta">${escapeHtml(order.delivery === "shipping" ? "Envío" : "Recogida")} · ${escapeHtml(order.source === "shopify" ? `Shopify · ${order.shopifyFulfillmentStatus || "Sin preparar"}` : order.mode === "simulated" ? "Prueba" : "Stripe")}</p></div>
-      <div class="order-status"><label for="status-${escapeHtml(order.id)}">Estado interno de gestión</label><select id="status-${escapeHtml(order.id)}" data-order-status>${statusOptions.replace(`value="${status}"`, `value="${status}" selected`)}</select></div>
+      <div class="order-status"><label for="status-${escapeHtml(order.id)}">Estado interno de producción</label><select id="status-${escapeHtml(order.id)}" data-order-status ${order.cancelledAt ? "disabled" : ""}>${statusOptions.replace(`value="${status}"`, `value="${status}" selected`)}</select></div>
       <button class="order-open" type="button" data-open-detail>Ver detalle ${order._open ? "−" : "+"}</button>
       <div class="order-detail" ${order._open ? "" : "hidden"}>
         <div class="detail-section"><h3>Entrega</h3><p>${escapeHtml(address)}</p><p>Subtotal: ${money(order.subtotalCents, order.currency)} · Envío: ${money(order.shippingCents, order.currency)}</p></div>
         <div class="detail-section"><h3>Artículos</h3><ul>${(order.items || []).map((item) => `<li>${escapeHtml(item.title)} — ${escapeHtml(item.quantity)} ${escapeHtml(item.unit)} · ${money(item.lineTotalCents, order.currency)}${item.fileName ? ` · <a href="/api/admin/uploads/${encodeURIComponent(item.uploadId)}" download>${escapeHtml(item.fileName)} (descargar referencia)</a>` : ""}${Object.values(item.options || {}).filter(Boolean).length ? ` · ${escapeHtml(Object.values(item.options).filter(Boolean).join(" / "))}` : ""}</li>`).join("")}</ul></div>
+        ${shopifyActions}
         <div class="admin-note"><label for="note-${escapeHtml(order.id)}">Nota interna</label><textarea id="note-${escapeHtml(order.id)}" maxlength="2000" placeholder="Apuntes para el equipo; no se envían al cliente">${escapeHtml(note)}</textarea><button class="quiet-button note-save" type="button" data-save-note>Guardar nota</button></div>
       </div>
     </article>`;
@@ -180,6 +182,33 @@ ordersList.addEventListener("click", async (event) => {
   if (event.target.closest("[data-open-detail]")) {
     order._open = !order._open;
     renderOrders();
+    return;
+  }
+  const fulfillButton = event.target.closest("[data-shopify-fulfill]");
+  if (fulfillButton) {
+    if (!window.confirm(`¿Marcar en Shopify como preparados todos los artículos pendientes del pedido ${order.orderName || order.id}? No se enviará un aviso al cliente.`)) return;
+    fulfillButton.disabled = true;
+    try {
+      const result = await api(`/api/admin/orders/${encodeURIComponent(order.id)}/fulfill`, { method: "POST" });
+      Object.assign(order, result.order);
+      renderOrders();
+      renderStats();
+      notify(`Preparación actualizada en Shopify: ${order.orderName || order.id}.`);
+    } catch (error) { notify(error.message, true); fulfillButton.disabled = false; }
+    return;
+  }
+  const cancelButton = event.target.closest("[data-shopify-cancel]");
+  if (cancelButton) {
+    if (!window.confirm(`Vas a cancelar ${order.orderName || order.id}, devolver al medio de pago original el importe pendiente de reembolso, reponer el stock y conservar el pedido cancelado en Shopify. ¿Continuar?`)) return;
+    cancelButton.disabled = true;
+    try {
+      const result = await api(`/api/admin/orders/${encodeURIComponent(order.id)}/cancel`, { method: "POST" });
+      Object.assign(order, result.order);
+      order.cancelPending = result.job?.done === false;
+      renderOrders();
+      renderStats();
+      notify(order.cancelPending ? `Shopify está procesando la cancelación de ${order.orderName || order.id}.` : `Pedido cancelado en Shopify: ${order.orderName || order.id}.`);
+    } catch (error) { notify(error.message, true); cancelButton.disabled = false; }
     return;
   }
   if (event.target.closest("[data-save-note]")) {
