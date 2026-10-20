@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { CURRENCY, getPublicCatalog, listAdminProducts, loadProductOverrides, paymentMode, priceCart, updateProduct } from "./server/catalog.mjs";
 import { createOrder, createRequest, findOrder, getUpload, listOrders, markEventProcessed, prepareStorage, saveUpload, updateOrder, UPLOAD_DIR } from "./server/storage.mjs";
 import { assertStripeReady, createCheckoutSession, retrieveCheckoutSession, verifyStripeSignature } from "./server/stripe.mjs";
+import { listShopifyOrders, listShopifyProducts, shopifyConfigured, updateShopifyOrder, updateShopifyProduct } from "./server/shopify.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)));
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
@@ -138,7 +139,7 @@ function requireAdmin(request, response) {
 async function handleAdmin(request, response, url) {
   const path = url.pathname;
   if (path === "/api/admin/session" && request.method === "GET") {
-    return send(response, 200, { configured: adminPasswordConfigured(), authenticated: isAdminAuthenticated(request) });
+    return send(response, 200, { configured: adminPasswordConfigured(), authenticated: isAdminAuthenticated(request), shopifyConfigured: shopifyConfigured() });
   }
   if (path === "/api/admin/session" && request.method === "POST") {
     if (!sameOrigin(request)) return fail(response, 403, "No se pudo validar el origen de la solicitud.", "invalid_origin");
@@ -161,11 +162,12 @@ async function handleAdmin(request, response, url) {
   if (!requireAdmin(request, response)) return;
 
   if (path === "/api/admin/orders" && request.method === "GET") {
-    const orders = await listOrders();
+    const localOrders = (await listOrders()).map((order) => ({ ...order, source: "local" }));
+    const orders = shopifyConfigured() ? [...await listShopifyOrders(), ...localOrders] : localOrders;
     orders.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
-    return send(response, 200, { orders: orders.map((order) => ({ ...order, fulfillmentStatus: order.fulfillmentStatus || "new" })) });
+    return send(response, 200, { orders: orders.map((order) => ({ ...order, fulfillmentStatus: order.fulfillmentStatus || "new" })), source: shopifyConfigured() ? "shopify+local" : "local" });
   }
-  const orderMatch = path.match(/^\/api\/admin\/orders\/(NEN-[A-Z0-9-]{12,40})$/);
+  const orderMatch = path.match(/^\/api\/admin\/orders\/(NEN-[A-Z0-9-]{12,40}|[0-9]{1,24})$/);
   if (orderMatch && request.method === "PATCH") {
     let body;
     try { body = await readJson(request); }
@@ -175,15 +177,23 @@ async function handleAdmin(request, response, url) {
       return fail(response, 422, `Estado no válido. Usa: ${allowedStatuses.join(", ")}.`, "invalid_fulfillment_status");
     }
     if (body.adminNote !== undefined && (typeof body.adminNote !== "string" || body.adminNote.length > 2000)) return fail(response, 422, "La nota no puede superar los 2.000 caracteres.", "invalid_admin_note");
-    const updated = await updateOrder(orderMatch[1], (order) => ({
-      ...order,
-      ...(body.fulfillmentStatus !== undefined ? { fulfillmentStatus: body.fulfillmentStatus } : {}),
-      ...(body.adminNote !== undefined ? { adminNote: cleanText(body.adminNote, 2000) } : {}),
-      adminUpdatedAt: new Date().toISOString()
-    }));
+    const updated = orderMatch[1].startsWith("NEN-")
+      ? await updateOrder(orderMatch[1], (order) => ({
+        ...order,
+        ...(body.fulfillmentStatus !== undefined ? { fulfillmentStatus: body.fulfillmentStatus } : {}),
+        ...(body.adminNote !== undefined ? { adminNote: cleanText(body.adminNote, 2000) } : {}),
+        adminUpdatedAt: new Date().toISOString()
+      }))
+      : shopifyConfigured() ? await updateShopifyOrder(orderMatch[1], {
+        ...(body.fulfillmentStatus !== undefined ? { fulfillmentStatus: body.fulfillmentStatus } : {}),
+        ...(body.adminNote !== undefined ? { adminNote: cleanText(body.adminNote, 2000) } : {})
+      }) : null;
     return updated ? send(response, 200, { order: { ...updated, fulfillmentStatus: updated.fulfillmentStatus || "new" } }) : fail(response, 404, "No encontramos ese pedido.", "order_not_found");
   }
-  if (path === "/api/admin/products" && request.method === "GET") return send(response, 200, { products: listAdminProducts(), mode: paymentMode(process.env) });
+  if (path === "/api/admin/products" && request.method === "GET") {
+    if (shopifyConfigured()) return send(response, 200, { products: await listShopifyProducts(), mode: "shopify", source: "shopify" });
+    return send(response, 200, { products: listAdminProducts(), mode: paymentMode(process.env), source: "local" });
+  }
   const uploadMatch = path.match(/^\/api\/admin\/uploads\/([a-f0-9-]{36})$/i);
   if (uploadMatch && request.method === "GET") {
     const upload = await getUpload(uploadMatch[1]);
@@ -208,6 +218,36 @@ async function handleAdmin(request, response, url) {
     let body;
     try { body = await readJson(request); }
     catch (error) { return fail(response, error.status || 400, error.message, "invalid_request"); }
+    if (shopifyConfigured()) {
+      const title = cleanText(body.title, 255);
+      const vendor = cleanText(body.vendor, 255);
+      const category = cleanText(body.category, 255);
+      const descriptionHtml = typeof body.descriptionHtml === "string" ? body.descriptionHtml.slice(0, 40_000) : undefined;
+      const tags = Array.isArray(body.tags) && body.tags.length <= 250 ? body.tags.map((tag) => cleanText(tag, 255)).filter(Boolean) : undefined;
+      const status = ["ACTIVE", "DRAFT", "ARCHIVED"].includes(body.status) ? body.status : undefined;
+      if (!title || (body.status !== undefined && !status) || (body.tags !== undefined && !tags)) {
+        return fail(response, 422, "Revisa el nombre, tipo, marca, etiquetas y estado del producto.", "invalid_product");
+      }
+      let variants;
+      if (body.variants !== undefined) {
+        if (!Array.isArray(body.variants) || body.variants.length > 2048) return fail(response, 422, "La lista de variantes no es válida.", "invalid_product_variants");
+        variants = [];
+        for (const variant of body.variants) {
+          if (!variant || typeof variant !== "object" || Array.isArray(variant)) return fail(response, 422, "La lista de variantes no es válida.", "invalid_product_variant");
+          const price = Number(variant.price);
+          const compareAtPrice = variant.compareAtPrice === "" || variant.compareAtPrice === null ? "" : Number(variant.compareAtPrice);
+          if (!/^\d{1,24}$/.test(String(variant.id)) || !Number.isFinite(price) || price < 0 || price > 1_000_000 || (compareAtPrice !== "" && (!Number.isFinite(compareAtPrice) || compareAtPrice < 0 || compareAtPrice > 1_000_000))) {
+            return fail(response, 422, "Revisa el precio de cada variante.", "invalid_product_variant");
+          }
+          if (typeof variant.sku !== "string" || variant.sku.length > 100 || typeof variant.barcode !== "string" || variant.barcode.length > 100) return fail(response, 422, "El SKU y el código de barras no pueden superar 100 caracteres.", "invalid_product_variant");
+          variants.push({ id: String(variant.id), price: price.toFixed(2), compareAtPrice: compareAtPrice === "" ? "" : compareAtPrice.toFixed(2), sku: variant.sku.trim(), barcode: variant.barcode.trim() });
+        }
+      }
+      const product = await updateShopifyProduct(productMatch[1], {
+        title, vendor, productType: category, status, tags, descriptionHtml, variants
+      });
+      return product ? send(response, 200, { product }) : fail(response, 404, "No encontramos ese producto en Shopify.", "product_not_found");
+    }
     const title = cleanText(body.title, 120);
     const category = cleanText(body.category, 80);
     const demoRateCents = Number(body.demoRateCents);
@@ -428,7 +468,7 @@ async function api(request, response, url) {
     try { return await handleAdmin(request, response, url); }
     catch (error) {
       console.error("Admin API error:", error);
-      return fail(response, 500, "No se pudo completar la acción del panel.", "admin_server_error");
+      return fail(response, error.status || 500, error.status ? error.message : "No se pudo completar la acción del panel.", error.code || "admin_server_error");
     }
   }
   try {

@@ -12,11 +12,19 @@ Requiere Node.js 20 o superior. Ejecuta `npm start` desde la carpeta del proyect
 
 El modo inicial es simulado: los precios de muestra son inventados para probar el flujo, no representan tarifas comerciales y no realizan cargos. Completa el carrito y los datos de contacto para crear un pedido `NEN-…` de demostración. Formularios de proyecto y visita también se guardan localmente y no se envían a Nenufero.
 
-## Panel de administración local
+## Panel de administración
 
-Abre `/admin/` con el servidor local iniciado. En `.env` configura `ADMIN_PASSWORD` con al menos 12 caracteres y `ADMIN_SESSION_SECRET` con un secreto aleatorio; reinicia `npm start` después de cambiarlo. El panel usa una sesión firmada en cookie `HttpOnly`, `SameSite=Strict`, permite revisar todos los pedidos locales, actualizar su estado de preparación y notas internas, y editar el nombre, categoría, disponibilidad y tarifas de los 13 SKU actuales. Los cambios de catálogo se guardan en `data/catalog-overrides.json`, excluido de Git.
+Abre `/admin/` con el servidor iniciado. En `.env` configura `ADMIN_PASSWORD` con al menos 12 caracteres y `ADMIN_SESSION_SECRET` con un secreto aleatorio. La sesión va firmada en una cookie `HttpOnly` y `SameSite=Strict`.
 
-Este almacenamiento es local al prototipo. La vista previa estática de Netlify no ejecuta `server.mjs` ni comparte estos pedidos o cambios; para administración remota y pedidos de la tienda real se necesita conectar el panel a Shopify o desplegar una API y almacenamiento persistente protegidos.
+Para leer y editar el catálogo real, crea una aplicación Shopify con los scopes `read_products`, `write_products`, `read_orders` y `write_orders`; configura `SHOPIFY_STORE_DOMAIN`, `SHOPIFY_ADMIN_ACCESS_TOKEN` y, opcionalmente, `SHOPIFY_API_VERSION` en el entorno del servidor. Nunca incluyas el token en el navegador ni en GitHub. La aplicación debe contar también con la autorización de Shopify para mostrar los datos protegidos de clientes, como nombre, email, teléfono y dirección.
+
+La conexión Shopify pagina el catálogo completo y las variantes de cada producto. Permite modificar título, descripción, marca, tipo, etiquetas, publicación y precios de variantes. En pedidos permite revisar los datos que Shopify autoriza, cambiar el estado interno de preparación y guardar notas internas en Shopify.
+
+Por defecto, Shopify limita pedidos a los últimos 60 días. Para gestionar el historial completo, solicita a Shopify el scope `read_all_orders` además de `read_orders` o `write_orders`; Shopify debe aprobarlo. La documentación oficial: [scopes de Shopify](https://shopify.dev/docs/api/usage/access-scopes).
+
+Sin credenciales Shopify, el panel local continúa en modo de demostración y permite revisar pedidos de prueba y editar los 13 SKU del prototipo. En Netlify, la función protegida gestiona datos reales Shopify; configura en Netlify las variables `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `SHOPIFY_STORE_DOMAIN`, `SHOPIFY_ADMIN_ACCESS_TOKEN` y `SHOPIFY_API_VERSION`. La contraseña debe tener al menos 12 caracteres y el secreto de sesión 32. No reutilices la contraseña local ni publiques el token. El despliegue remoto requiere que se concedan los scopes y el acceso de datos protegidos descritos arriba.
+
+El catálogo local se guarda en `data/catalog-overrides.json`, excluido de Git. El servidor local escribe pedidos y archivos en `data/`; esa información local no se sincroniza con Netlify ni con Shopify.
 
 ## Stripe, para una fase posterior
 

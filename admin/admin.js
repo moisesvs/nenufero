@@ -10,8 +10,9 @@ const orderSearch = document.querySelector("#order-search");
 const orderFilter = document.querySelector("#order-filter");
 let orders = [];
 let products = [];
+let catalogSource = "local";
 
-const statusNames = { new: "Nuevo", confirmed: "Confirmado", in_production: "En producción", ready: "Listo", completed: "Completado", cancelled: "Cancelado" };
+const statusNames = { new: "Nuevo", confirmed: "Confirmado", in_production: "En producción", ready: "Listo", completed: "Completado", cancelled: "Detenido internamente" };
 const statusOptions = Object.entries(statusNames).map(([value, label]) => `<option value="${value}">${label}</option>`).join("");
 
 function escapeHtml(value) {
@@ -20,6 +21,11 @@ function escapeHtml(value) {
 
 function euros(cents) {
   return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format((Number(cents) || 0) / 100);
+}
+
+function money(cents, currency = "EUR") {
+  try { return new Intl.NumberFormat("es-ES", { style: "currency", currency }).format((Number(cents) || 0) / 100); }
+  catch { return euros(cents); }
 }
 
 function dateText(value) {
@@ -82,17 +88,18 @@ function renderOrders() {
     const customer = order.customer || {};
     const itemText = (order.items || []).map((item) => `${item.title} × ${item.quantity}`).join(" · ");
     const address = order.address ? [order.address.line1, order.address.line2, order.address.city, order.address.province, order.address.postalCode, order.address.country].filter(Boolean).join(", ") : "Recogida en el taller";
-    const paymentLabel = order.paymentStatus === "paid" ? "PAGO CONFIRMADO" : order.paymentStatus === "simulated" ? "PEDIDO SIMULADO · SIN COBRO" : order.paymentStatus === "failed" ? "PAGO FALLIDO" : "PENDIENTE DE PAGO";
+    const paymentLabels = { paid: "PAGO CONFIRMADO", partially_paid: "PAGO PARCIAL", pending: "PENDIENTE DE PAGO", authorized: "PAGO AUTORIZADO", partially_refunded: "REEMBOLSO PARCIAL", refunded: "REEMBOLSADO", voided: "ANULADO", expired: "CADUCADO", simulated: "PEDIDO SIMULADO · SIN COBRO", failed: "PAGO FALLIDO" };
+    const paymentLabel = paymentLabels[order.paymentStatus] || "ESTADO DE PAGO NO DISPONIBLE";
     const note = order.adminNote || "";
     return `<article class="order-card" data-order-id="${escapeHtml(order.id)}">
-      <div><div class="order-id">${escapeHtml(order.id)}</div><p class="order-meta">${escapeHtml(dateText(order.createdAt))} · ${escapeHtml(itemText || "Sin artículos")}</p><span class="order-payment${order.paymentStatus === "paid" ? " is-paid" : ""}">${paymentLabel}</span></div>
+      <div><div class="order-id">${escapeHtml(order.orderName || order.id)}</div><p class="order-meta">${escapeHtml(dateText(order.createdAt))} · ${escapeHtml(itemText || "Sin artículos")}</p><span class="order-payment${order.paymentStatus === "paid" ? " is-paid" : ""}">${paymentLabel}</span></div>
       <div class="order-customer"><strong>${escapeHtml(customer.name || "Cliente sin nombre")}</strong><p class="order-contact">${escapeHtml(customer.email || "Sin email")}<br>${escapeHtml(customer.phone || "Sin teléfono")}</p></div>
-      <div class="order-total">${euros(order.totalCents)}<p class="order-meta">${escapeHtml(order.delivery === "shipping" ? "Envío" : "Recogida")} · ${escapeHtml(order.mode === "simulated" ? "Prueba" : "Stripe")}</p></div>
-      <div class="order-status"><label for="status-${escapeHtml(order.id)}">Preparación</label><select id="status-${escapeHtml(order.id)}" data-order-status>${statusOptions.replace(`value="${status}"`, `value="${status}" selected`)}</select></div>
+      <div class="order-total">${money(order.totalCents, order.currency)}<p class="order-meta">${escapeHtml(order.delivery === "shipping" ? "Envío" : "Recogida")} · ${escapeHtml(order.source === "shopify" ? `Shopify · ${order.shopifyFulfillmentStatus || "Sin preparar"}` : order.mode === "simulated" ? "Prueba" : "Stripe")}</p></div>
+      <div class="order-status"><label for="status-${escapeHtml(order.id)}">Estado interno de gestión</label><select id="status-${escapeHtml(order.id)}" data-order-status>${statusOptions.replace(`value="${status}"`, `value="${status}" selected`)}</select></div>
       <button class="order-open" type="button" data-open-detail>Ver detalle ${order._open ? "−" : "+"}</button>
       <div class="order-detail" ${order._open ? "" : "hidden"}>
-        <div class="detail-section"><h3>Entrega</h3><p>${escapeHtml(address)}</p><p>Subtotal: ${euros(order.subtotalCents)} · Envío: ${euros(order.shippingCents)}</p></div>
-        <div class="detail-section"><h3>Artículos</h3><ul>${(order.items || []).map((item) => `<li>${escapeHtml(item.title)} — ${escapeHtml(item.quantity)} ${escapeHtml(item.unit)} · ${euros(item.lineTotalCents)}${item.fileName ? ` · <a href="/api/admin/uploads/${encodeURIComponent(item.uploadId)}" download>${escapeHtml(item.fileName)} (descargar referencia)</a>` : ""}${Object.values(item.options || {}).filter(Boolean).length ? ` · ${escapeHtml(Object.values(item.options).filter(Boolean).join(" / "))}` : ""}</li>`).join("")}</ul></div>
+        <div class="detail-section"><h3>Entrega</h3><p>${escapeHtml(address)}</p><p>Subtotal: ${money(order.subtotalCents, order.currency)} · Envío: ${money(order.shippingCents, order.currency)}</p></div>
+        <div class="detail-section"><h3>Artículos</h3><ul>${(order.items || []).map((item) => `<li>${escapeHtml(item.title)} — ${escapeHtml(item.quantity)} ${escapeHtml(item.unit)} · ${money(item.lineTotalCents, order.currency)}${item.fileName ? ` · <a href="/api/admin/uploads/${encodeURIComponent(item.uploadId)}" download>${escapeHtml(item.fileName)} (descargar referencia)</a>` : ""}${Object.values(item.options || {}).filter(Boolean).length ? ` · ${escapeHtml(Object.values(item.options).filter(Boolean).join(" / "))}` : ""}</li>`).join("")}</ul></div>
         <div class="admin-note"><label for="note-${escapeHtml(order.id)}">Nota interna</label><textarea id="note-${escapeHtml(order.id)}" maxlength="2000" placeholder="Apuntes para el equipo; no se envían al cliente">${escapeHtml(note)}</textarea><button class="quiet-button note-save" type="button" data-save-note>Guardar nota</button></div>
       </div>
     </article>`;
@@ -100,6 +107,20 @@ function renderOrders() {
 }
 
 function renderProducts() {
+  const header = document.querySelector(".product-table thead");
+  if (catalogSource === "shopify") {
+    header.innerHTML = "<tr><th>Producto</th><th>Marca y tipo</th><th>Etiquetas y estado</th><th>Variantes, precio e inventario</th><th></th></tr>";
+    productsList.innerHTML = products.map((product) => `<tr data-sku="${escapeHtml(product.id)}" class="shopify-product-row">
+      <td><label class="shopify-product-field">Nombre<input type="text" data-field="title" value="${escapeHtml(product.title)}" maxlength="255"></label><label class="shopify-product-field">Descripción HTML<textarea data-field="descriptionHtml" maxlength="40000">${escapeHtml(product.descriptionHtml)}</textarea></label><span class="product-sku">${escapeHtml(product.handle)} · ${escapeHtml(product.id)}</span></td>
+      <td><label class="shopify-product-field">Marca<input type="text" data-field="vendor" value="${escapeHtml(product.vendor)}" maxlength="255"></label><label class="shopify-product-field">Tipo<input type="text" data-field="category" value="${escapeHtml(product.category)}" maxlength="255"></label></td>
+      <td><label class="shopify-product-field">Etiquetas, separadas por comas<input type="text" data-field="tags" value="${escapeHtml(product.tags.join(", "))}" maxlength="2000"></label><label class="shopify-product-field">Publicación<select data-field="status"><option value="ACTIVE" ${product.status === "ACTIVE" ? "selected" : ""}>Activo</option><option value="DRAFT" ${product.status === "DRAFT" ? "selected" : ""}>Borrador</option><option value="ARCHIVED" ${product.status === "ARCHIVED" ? "selected" : ""}>Archivado</option></select></label><span class="product-sku">Inventario total: ${escapeHtml(product.totalInventory)}</span></td>
+      <td><div class="variant-editor">${product.variants.map((variant) => `<div class="variant-row" data-variant-id="${escapeHtml(variant.id)}"><strong>${escapeHtml(variant.title)}</strong><span>${escapeHtml(variant.inventoryQuantity)} unidades en inventario</span><label>Precio <input type="number" data-variant-price min="0" step="0.01" value="${escapeHtml(variant.price)}"></label><label>Precio comparativo <input type="number" data-variant-compare min="0" step="0.01" value="${escapeHtml(variant.compareAtPrice)}" placeholder="Sin precio"></label><label>SKU <input type="text" data-variant-sku maxlength="100" value="${escapeHtml(variant.sku)}"></label><label>Código de barras <input type="text" data-variant-barcode maxlength="100" value="${escapeHtml(variant.barcode)}"></label></div>`).join("")}</div></td>
+      <td><button class="product-save" type="button" data-save-product>Guardar</button></td>
+    </tr>`).join("");
+    document.querySelector("#pricing-mode").textContent = "CATÁLOGO SHOPIFY";
+    return;
+  }
+  header.innerHTML = "<tr><th>Producto y SKU</th><th>Categoría</th><th>Precio de demostración</th><th>Tarifa Stripe</th><th>Estado</th><th></th></tr>";
   productsList.innerHTML = products.map((product) => `<tr data-sku="${escapeHtml(product.sku)}">
     <td><input type="text" data-field="title" value="${escapeHtml(product.title)}" maxlength="120" aria-label="Nombre de ${escapeHtml(product.sku)}"><span class="product-sku">${escapeHtml(product.sku)} · ${escapeHtml(product.unit)} · ${escapeHtml(product.model)}</span></td>
     <td><input type="text" data-field="category" value="${escapeHtml(product.category)}" maxlength="80" aria-label="Categoría de ${escapeHtml(product.title)}"></td>
@@ -115,7 +136,13 @@ async function loadData() {
   const [orderData, productData] = await Promise.all([api("/api/admin/orders"), api("/api/admin/products")]);
   orders = orderData.orders;
   products = productData.products;
+  catalogSource = productData.source || "local";
   document.body.dataset.mode = productData.mode;
+  const integrationStatus = document.querySelector("#integration-status");
+  integrationStatus.textContent = productData.source === "shopify"
+    ? "Conectado a Shopify. Pedidos y catálogo se leen directamente de la tienda. Para consultar pedidos anteriores a los últimos 60 días, Shopify debe conceder el permiso read_all_orders."
+    : "Modo local: se muestran los pedidos y productos guardados en este prototipo. Configura Shopify para administrar el catálogo y los pedidos de la tienda real.";
+  integrationStatus.classList.toggle("is-shopify", productData.source === "shopify");
   renderStats();
   renderOrders();
   renderProducts();
@@ -175,6 +202,33 @@ productsList.addEventListener("click", async (event) => {
   if (!button) return;
   const row = button.closest("[data-sku]");
   const old = products.find((product) => product.sku === row.dataset.sku);
+  if (catalogSource === "shopify") {
+    const product = products.find((entry) => entry.id === row.dataset.sku);
+    const body = {
+      title: row.querySelector('[data-field="title"]').value.trim(),
+      descriptionHtml: row.querySelector('[data-field="descriptionHtml"]').value,
+      vendor: row.querySelector('[data-field="vendor"]').value.trim(),
+      category: row.querySelector('[data-field="category"]').value.trim(),
+      tags: row.querySelector('[data-field="tags"]').value.split(",").map((tag) => tag.trim()).filter(Boolean),
+      status: row.querySelector('[data-field="status"]').value,
+      variants: [...row.querySelectorAll("[data-variant-id]")].map((variant) => ({
+        id: variant.dataset.variantId,
+        price: variant.querySelector("[data-variant-price]").value,
+        compareAtPrice: variant.querySelector("[data-variant-compare]").value,
+        sku: variant.querySelector("[data-variant-sku]").value,
+        barcode: variant.querySelector("[data-variant-barcode]").value
+      }))
+    };
+    button.disabled = true;
+    try {
+      const result = await api(`/api/admin/products/${encodeURIComponent(product.id)}`, { method: "PATCH", body: JSON.stringify(body) });
+      Object.assign(product, result.product);
+      renderProducts();
+      renderStats();
+      notify(`${product.title} actualizado en Shopify.`);
+    } catch (error) { notify(error.message, true); button.disabled = false; }
+    return;
+  }
   const demoValue = Number(row.querySelector('[data-field="demoRate"]').value);
   const stripeInput = row.querySelector('[data-field="stripeRate"]');
   const stripeValue = stripeInput.value === "" ? null : Number(stripeInput.value);

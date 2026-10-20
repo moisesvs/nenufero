@@ -1,0 +1,15 @@
+[build]
+publish = "."
+functions = "netlify/functions"
+
+[build.environment]
+NODE_VERSION = "22"
+
+[functions]
+node_bundler = "esbuild"
+
+[[redirects]]
+from = "/api/admin/*"
+to = "/.netlify/functions/admin/:splat"
+status = 200
+force = true
