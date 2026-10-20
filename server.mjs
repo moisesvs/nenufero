@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { CURRENCY, getPublicCatalog, listAdminProducts, loadProductOverrides, paymentMode, priceCart, updateProduct } from "./server/catalog.mjs";
 import { createOrder, createRequest, findOrder, getUpload, listOrders, markEventProcessed, prepareStorage, saveUpload, updateOrder, UPLOAD_DIR } from "./server/storage.mjs";
 import { assertStripeReady, createCheckoutSession, retrieveCheckoutSession, verifyStripeSignature } from "./server/stripe.mjs";
-import { listShopifyOrders, listShopifyProducts, shopifyConfigured, updateShopifyOrder, updateShopifyProduct } from "./server/shopify.mjs";
+import { adjustShopifyInventory, listShopifyOrders, listShopifyProducts, shopifyConfigured, updateShopifyOrder, updateShopifyProduct } from "./server/shopify.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)));
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
@@ -193,6 +193,21 @@ async function handleAdmin(request, response, url) {
   if (path === "/api/admin/products" && request.method === "GET") {
     if (shopifyConfigured()) return send(response, 200, { products: await listShopifyProducts(), mode: "shopify", source: "shopify" });
     return send(response, 200, { products: listAdminProducts(), mode: paymentMode(process.env), source: "local" });
+  }
+  const inventoryMatch = path.match(/^\/api\/admin\/products\/(\d{1,24})\/inventory$/);
+  if (inventoryMatch && request.method === "POST") {
+    if (!shopifyConfigured()) return fail(response, 503, "Configura Shopify para ajustar el inventario de la tienda real.", "shopify_not_configured");
+    let body;
+    try { body = await readJson(request); }
+    catch (error) { return fail(response, error.status || 400, error.message, "invalid_request"); }
+    const variantId = String(body.variantId || "");
+    const locationId = String(body.locationId || "");
+    const delta = Number(body.delta);
+    if (!/^\d{1,24}$/.test(variantId) || !/^gid:\/\/shopify\/Location\/\d+$/.test(locationId) || !Number.isSafeInteger(delta) || delta === 0 || Math.abs(delta) > 10000) {
+      return fail(response, 422, "Indica una variante, ubicación y ajuste entero válido (entre −10.000 y 10.000, sin contar cero).", "invalid_inventory_adjustment");
+    }
+    const adjustment = await adjustShopifyInventory(inventoryMatch[1], variantId, locationId, delta);
+    return adjustment ? send(response, 200, { adjustment }) : fail(response, 404, "No encontramos la variante del producto en Shopify.", "variant_not_found");
   }
   const uploadMatch = path.match(/^\/api\/admin\/uploads\/([a-f0-9-]{36})$/i);
   if (uploadMatch && request.method === "GET") {

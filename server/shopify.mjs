@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 const STATUS_TAG_PREFIX = "nenufero:estado:";
 const ADMIN_NOTE_MARKER = "\n\n[NENUFERO ADMIN]\n";
 
@@ -145,7 +147,7 @@ export async function listShopifyOrders() {
   return orders;
 }
 
-const VARIANT_FIELDS = `id legacyResourceId title sku barcode price compareAtPrice inventoryQuantity inventoryPolicy taxable weight weightUnit selectedOptions { name value }`;
+const VARIANT_FIELDS = `id legacyResourceId title sku barcode price compareAtPrice inventoryQuantity inventoryPolicy taxable weight weightUnit selectedOptions { name value } inventoryItem { id tracked inventoryLevels(first: 100) { nodes { location { id name } quantities(names: ["available"]) { name quantity } } pageInfo { hasNextPage endCursor } } }`;
 const PRODUCT_FIELDS = `id legacyResourceId title handle descriptionHtml vendor productType status tags totalInventory featuredImage { url altText } variants(first: 100) { nodes { ${VARIANT_FIELDS} } pageInfo { hasNextPage endCursor } }`;
 
 async function completeVariants(product) {
@@ -172,7 +174,14 @@ function normalizeProduct(product, variants = product.variants.nodes) {
       id: String(variant.legacyResourceId), title: variant.title, sku: variant.sku || "", barcode: variant.barcode || "",
       price: variant.price, compareAtPrice: variant.compareAtPrice || "", inventoryQuantity: variant.inventoryQuantity,
       inventoryPolicy: variant.inventoryPolicy, taxable: variant.taxable, weight: variant.weight, weightUnit: variant.weightUnit,
-      selectedOptions: variant.selectedOptions || []
+      selectedOptions: variant.selectedOptions || [],
+      inventoryTracked: variant.inventoryItem?.tracked ?? false,
+      inventoryItemId: variant.inventoryItem?.id || "",
+      inventoryLocations: (variant.inventoryItem?.inventoryLevels?.nodes || []).map((level) => ({
+        id: level.location.id,
+        name: level.location.name,
+        available: level.quantities.find((quantity) => quantity.name === "available")?.quantity ?? 0
+      }))
     }))
   };
 }
@@ -243,6 +252,23 @@ export async function updateShopifyProduct(legacyId, fields) {
   if (!product) return null;
   const refreshedVariants = product.variants.pageInfo.hasNextPage ? await completeVariants(product) : product.variants.nodes;
   return normalizeProduct(product, refreshedVariants);
+}
+
+export async function adjustShopifyInventory(productId, variantId, locationId, delta) {
+  const variantGid = `gid://shopify/ProductVariant/${variantId}`;
+  const data = await graphql(`query AdminVariantInventory($id: ID!) { productVariant(id: $id) { product { legacyResourceId } inventoryItem { id tracked inventoryLevels(first: 100) { nodes { location { id } } } } } }`, { id: variantGid });
+  const variant = data.productVariant;
+  if (!variant || String(variant.product.legacyResourceId) !== String(productId)) return null;
+  const inventoryItemId = variant.inventoryItem?.id;
+  if (!inventoryItemId || !variant.inventoryItem.tracked) throw Object.assign(new Error("Esta variante no tiene el seguimiento de inventario activado en Shopify."), { status: 422, code: "inventory_not_tracked" });
+  if (!variant.inventoryItem.inventoryLevels.nodes.some((level) => level.location.id === locationId)) throw Object.assign(new Error("La variante no tiene inventario en esa ubicación. Revisa sus ubicaciones en Shopify."), { status: 422, code: "inventory_location_unavailable" });
+  const idempotencyKey = randomUUID();
+  const result = await graphql(`mutation AdjustInventory($input: InventoryAdjustQuantitiesInput!, $idempotencyKey: String!) { inventoryAdjustQuantities(input: $input) @idempotent(key: $idempotencyKey) { inventoryAdjustmentGroup { changes { delta quantityAfterChange } } userErrors { field message } } }`, {
+    idempotencyKey,
+    input: { reason: "correction", name: "available", referenceDocumentUri: `nenufero://admin/inventory-adjustment/${idempotencyKey}`, changes: [{ inventoryItemId, locationId, delta, changeFromQuantity: null }] }
+  });
+  userErrors(result, "inventoryAdjustQuantities");
+  return result.inventoryAdjustQuantities?.inventoryAdjustmentGroup || null;
 }
 
 export { STATUS_TAG_PREFIX };

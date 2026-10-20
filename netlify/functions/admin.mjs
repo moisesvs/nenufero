@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { listShopifyOrders, listShopifyProducts, shopifyConfigured, updateShopifyOrder, updateShopifyProduct } from "../../server/shopify.mjs";
+import { adjustShopifyInventory, listShopifyOrders, listShopifyProducts, shopifyConfigured, updateShopifyOrder, updateShopifyProduct } from "../../server/shopify.mjs";
 
 const COOKIE_NAME = "nenufero_admin";
 const SESSION_SECONDS = 8 * 60 * 60;
@@ -138,6 +138,16 @@ export async function handler(event) {
       return order ? response(200, { order }) : failure(404, "No encontramos ese pedido.", "order_not_found");
     }
     if (path === "/api/admin/products" && method === "GET") return response(200, { products: await listShopifyProducts(), mode: "shopify", source: "shopify" });
+    const inventoryMatch = path.match(/^\/api\/admin\/products\/(\d{1,24})\/inventory$/);
+    if (inventoryMatch && method === "POST") {
+      const body = requestBody(event);
+      const variantId = String(body.variantId || "");
+      const locationId = String(body.locationId || "");
+      const delta = Number(body.delta);
+      if (!/^\d{1,24}$/.test(variantId) || !/^gid:\/\/shopify\/Location\/\d+$/.test(locationId) || !Number.isSafeInteger(delta) || delta === 0 || Math.abs(delta) > 10000) return failure(422, "Indica una variante, ubicación y ajuste entero válido (entre −10.000 y 10.000, sin contar cero).", "invalid_inventory_adjustment");
+      const adjustment = await adjustShopifyInventory(inventoryMatch[1], variantId, locationId, delta);
+      return adjustment ? response(200, { adjustment }) : failure(404, "No encontramos la variante del producto en Shopify.", "variant_not_found");
+    }
     const productMatch = path.match(/^\/api\/admin\/products\/(\d{1,24})$/);
     if (productMatch && method === "PATCH") return await patchProduct(productMatch[1], requestBody(event));
     return failure(404, "No encontramos esa ruta del panel.", "not_found");

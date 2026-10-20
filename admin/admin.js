@@ -114,7 +114,7 @@ function renderProducts() {
       <td><label class="shopify-product-field">Nombre<input type="text" data-field="title" value="${escapeHtml(product.title)}" maxlength="255"></label><label class="shopify-product-field">Descripción HTML<textarea data-field="descriptionHtml" maxlength="40000">${escapeHtml(product.descriptionHtml)}</textarea></label><span class="product-sku">${escapeHtml(product.handle)} · ${escapeHtml(product.id)}</span></td>
       <td><label class="shopify-product-field">Marca<input type="text" data-field="vendor" value="${escapeHtml(product.vendor)}" maxlength="255"></label><label class="shopify-product-field">Tipo<input type="text" data-field="category" value="${escapeHtml(product.category)}" maxlength="255"></label></td>
       <td><label class="shopify-product-field">Etiquetas, separadas por comas<input type="text" data-field="tags" value="${escapeHtml(product.tags.join(", "))}" maxlength="2000"></label><label class="shopify-product-field">Publicación<select data-field="status"><option value="ACTIVE" ${product.status === "ACTIVE" ? "selected" : ""}>Activo</option><option value="DRAFT" ${product.status === "DRAFT" ? "selected" : ""}>Borrador</option><option value="ARCHIVED" ${product.status === "ARCHIVED" ? "selected" : ""}>Archivado</option></select></label><span class="product-sku">Inventario total: ${escapeHtml(product.totalInventory)}</span></td>
-      <td><div class="variant-editor">${product.variants.map((variant) => `<div class="variant-row" data-variant-id="${escapeHtml(variant.id)}"><strong>${escapeHtml(variant.title)}</strong><span>${escapeHtml(variant.inventoryQuantity)} unidades en inventario</span><label>Precio <input type="number" data-variant-price min="0" step="0.01" value="${escapeHtml(variant.price)}"></label><label>Precio comparativo <input type="number" data-variant-compare min="0" step="0.01" value="${escapeHtml(variant.compareAtPrice)}" placeholder="Sin precio"></label><label>SKU <input type="text" data-variant-sku maxlength="100" value="${escapeHtml(variant.sku)}"></label><label>Código de barras <input type="text" data-variant-barcode maxlength="100" value="${escapeHtml(variant.barcode)}"></label></div>`).join("")}</div></td>
+      <td><div class="variant-editor">${product.variants.map((variant) => `<div class="variant-row" data-variant-id="${escapeHtml(variant.id)}"><strong>${escapeHtml(variant.title)}</strong><span>${escapeHtml(variant.inventoryQuantity)} unidades totales · ${variant.inventoryTracked ? "inventario por ubicación" : "seguimiento de stock desactivado"}</span><label>Precio <input type="number" data-variant-price min="0" step="0.01" value="${escapeHtml(variant.price)}"></label><label>Precio comparativo <input type="number" data-variant-compare min="0" step="0.01" value="${escapeHtml(variant.compareAtPrice)}" placeholder="Sin precio"></label><label>SKU <input type="text" data-variant-sku maxlength="100" value="${escapeHtml(variant.sku)}"></label><label>Código de barras <input type="text" data-variant-barcode maxlength="100" value="${escapeHtml(variant.barcode)}"></label>${variant.inventoryTracked ? `<div class="inventory-editor">${variant.inventoryLocations.map((location) => `<div class="inventory-location"><span><strong>${escapeHtml(location.name)}</strong> · ${escapeHtml(location.available)} disponibles</span><label for="delta-${escapeHtml(variant.id)}-${escapeHtml(location.id)}">Ajuste</label><input id="delta-${escapeHtml(variant.id)}-${escapeHtml(location.id)}" type="number" step="1" min="-10000" max="10000" data-inventory-delta placeholder="+ / −"><button type="button" data-adjust-inventory data-location-id="${escapeHtml(location.id)}">Aplicar</button></div>`).join("") || `<span>Sin ubicaciones de inventario.</span>`}</div>` : ""}</div>`).join("")}</div></td>
       <td><button class="product-save" type="button" data-save-product>Guardar</button></td>
     </tr>`).join("");
     document.querySelector("#pricing-mode").textContent = "CATÁLOGO SHOPIFY";
@@ -140,7 +140,7 @@ async function loadData() {
   document.body.dataset.mode = productData.mode;
   const integrationStatus = document.querySelector("#integration-status");
   integrationStatus.textContent = productData.source === "shopify"
-    ? "Conectado a Shopify. Pedidos y catálogo se leen directamente de la tienda. Para consultar pedidos anteriores a los últimos 60 días, Shopify debe conceder el permiso read_all_orders."
+    ? "Conectado a Shopify. Pedidos y catálogo se leen directamente de la tienda. El estado de producción del panel es interno; el estado de preparación real aparece indicado como Shopify. Para consultar pedidos anteriores a los últimos 60 días, Shopify debe conceder read_all_orders. Los ajustes de stock requieren write_inventory."
     : "Modo local: se muestran los pedidos y productos guardados en este prototipo. Configura Shopify para administrar el catálogo y los pedidos de la tienda real.";
   integrationStatus.classList.toggle("is-shopify", productData.source === "shopify");
   renderStats();
@@ -198,6 +198,22 @@ ordersList.addEventListener("change", async (event) => {
 });
 
 productsList.addEventListener("click", async (event) => {
+  const inventoryButton = event.target.closest("[data-adjust-inventory]");
+  if (inventoryButton) {
+    const productRow = inventoryButton.closest("[data-sku]");
+    const variantRow = inventoryButton.closest("[data-variant-id]");
+    const deltaInput = inventoryButton.parentElement.querySelector("[data-inventory-delta]");
+    const delta = Number(deltaInput.value);
+    if (!Number.isSafeInteger(delta) || delta === 0 || Math.abs(delta) > 10000) return notify("Escribe un ajuste entero distinto de cero, entre −10.000 y 10.000.", true);
+    inventoryButton.disabled = true;
+    try {
+      const productName = products.find((product) => product.id === productRow.dataset.sku)?.title || "Producto";
+      await api(`/api/admin/products/${encodeURIComponent(productRow.dataset.sku)}/inventory`, { method: "POST", body: JSON.stringify({ variantId: variantRow.dataset.variantId, locationId: inventoryButton.dataset.locationId, delta }) });
+      await loadData();
+      notify(`Ajuste de inventario guardado para ${productName}.`);
+    } catch (error) { notify(error.message, true); inventoryButton.disabled = false; }
+    return;
+  }
   const button = event.target.closest("[data-save-product]");
   if (!button) return;
   const row = button.closest("[data-sku]");
