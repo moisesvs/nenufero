@@ -77,7 +77,7 @@ function renderOrders() {
   const selectedStatus = orderFilter.value;
   const filtered = orders.filter((order) => {
     const status = order.fulfillmentStatus || "new";
-    const text = [order.id, order.customer?.name, order.customer?.email, ...(order.items || []).map((item) => item.title)].join(" ").toLocaleLowerCase("es");
+    const text = [order.id, order.orderName, order.customer?.name, order.customer?.email, order.customer?.phone, order.address?.city, order.address?.postalCode, ...(order.tags || []), ...(order.items || []).flatMap((item) => [item.title, item.sku])].join(" ").toLocaleLowerCase("es");
     return (selectedStatus === "all" || status === selectedStatus) && (!query || text.includes(query));
   });
   if (!filtered.length) {
