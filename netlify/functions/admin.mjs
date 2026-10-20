@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { adjustShopifyInventory, cancelShopifyOrder, createShopifyVariant, deleteShopifyVariant, fulfillShopifyOrder, listShopifyOrders, listShopifyProducts, shopifyConfigured, updateShopifyOrder, updateShopifyProduct } from "../../server/shopify.mjs";
+import { addShopifyProductImage, adjustShopifyInventory, cancelShopifyOrder, createShopifyVariant, deleteShopifyProductMedia, deleteShopifyVariant, fulfillShopifyOrder, listShopifyOrders, listShopifyProducts, shopifyConfigured, updateShopifyOrder, updateShopifyProduct } from "../../server/shopify.mjs";
 
 const COOKIE_NAME = "nenufero_admin";
 const SESSION_SECONDS = 8 * 60 * 60;
@@ -148,6 +148,19 @@ export async function handler(event) {
       return order ? response(200, { order }) : failure(404, "No encontramos ese pedido.", "order_not_found");
     }
     if (path === "/api/admin/products" && method === "GET") return response(200, { products: await listShopifyProducts(), mode: "shopify", source: "shopify" });
+    const mediaRoute = path.match(/^\/api\/admin\/products\/(\d{1,24})\/media$/);
+    if (mediaRoute && method === "POST") {
+      const body = requestBody(event);
+      if (typeof body.source !== "string" || body.source.length > 2048 || typeof body.alt !== "string" || body.alt.length > 512) return failure(422, "Indica la URL HTTPS pública y el texto alternativo de la imagen.", "invalid_product_image");
+      const product = await addShopifyProductImage(mediaRoute[1], body.source, cleanText(body.alt, 512));
+      return product ? response(200, { product }) : failure(404, "No encontramos ese producto en Shopify.", "product_not_found");
+    }
+    if (mediaRoute && method === "DELETE") {
+      const body = requestBody(event);
+      if (typeof body.mediaId !== "string" || !body.mediaId.startsWith("gid://shopify/")) return failure(422, "La referencia de imagen no es válida.", "invalid_product_media");
+      const product = await deleteShopifyProductMedia(mediaRoute[1], body.mediaId);
+      return product ? response(200, { product }) : failure(404, "No encontramos esa imagen en el producto indicado.", "product_media_not_found");
+    }
     const variantRoute = path.match(/^\/api\/admin\/products\/(\d{1,24})\/variants(?:\/(\d{1,24}))?$/);
     if (variantRoute && method === "POST" && !variantRoute[2]) {
       const body = requestBody(event);

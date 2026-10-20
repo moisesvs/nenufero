@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { isIP } from "node:net";
 
 const STATUS_TAG_PREFIX = "nenufero:estado:";
 const ADMIN_NOTE_MARKER = "\n\n[NENUFERO ADMIN]\n";
@@ -151,7 +152,8 @@ export async function listShopifyOrders() {
 }
 
 const VARIANT_FIELDS = `id legacyResourceId title sku barcode price compareAtPrice inventoryQuantity inventoryPolicy taxable weight weightUnit selectedOptions { name value } inventoryItem { id tracked inventoryLevels(first: 100) { nodes { location { id name } quantities(names: ["available"]) { name quantity } } pageInfo { hasNextPage endCursor } } }`;
-const PRODUCT_FIELDS = `id legacyResourceId title handle descriptionHtml vendor productType status tags totalInventory featuredImage { url altText } options { id name values } variants(first: 100) { nodes { ${VARIANT_FIELDS} } pageInfo { hasNextPage endCursor } }`;
+const PRODUCT_MEDIA_FIELDS = `id alt mediaContentType status preview { status image { url altText } }`;
+const PRODUCT_FIELDS = `id legacyResourceId title handle descriptionHtml vendor productType status tags totalInventory featuredImage { url altText } options { id name values } media(first: 100) { nodes { ${PRODUCT_MEDIA_FIELDS} } pageInfo { hasNextPage endCursor } } variants(first: 100) { nodes { ${VARIANT_FIELDS} } pageInfo { hasNextPage endCursor } }`;
 
 async function completeVariants(product) {
   const variants = [...product.variants.nodes];
@@ -166,13 +168,27 @@ async function completeVariants(product) {
   return variants;
 }
 
-function normalizeProduct(product, variants = product.variants.nodes) {
+async function completeMedia(product) {
+  const media = [...product.media.nodes];
+  let after = product.media.pageInfo.endCursor;
+  while (product.media.pageInfo.hasNextPage) {
+    const data = await graphql(`query ProductMedia($id: ID!, $after: String) { product(id: $id) { media(first: 100, after: $after) { nodes { ${PRODUCT_MEDIA_FIELDS} } pageInfo { hasNextPage endCursor } } } }`, { id: product.id, after });
+    if (!data.product) break;
+    media.push(...data.product.media.nodes);
+    product.media.pageInfo = data.product.media.pageInfo;
+    after = product.media.pageInfo.endCursor;
+  }
+  return media;
+}
+
+function normalizeProduct(product, variants = product.variants.nodes, media = product.media.nodes) {
   return {
     id: String(product.legacyResourceId), source: "shopify", title: product.title,
     handle: product.handle, descriptionHtml: product.descriptionHtml || "", vendor: product.vendor || "",
     category: product.productType || "", status: product.status, active: product.status === "ACTIVE",
     tags: product.tags || [], totalInventory: product.totalInventory || 0,
     image: product.featuredImage?.url || "", imageAlt: product.featuredImage?.altText || "",
+    media: media.map((item) => ({ id: item.id, alt: item.alt || "", type: item.mediaContentType, status: item.status, url: item.preview?.image?.url || "", imageAlt: item.preview?.image?.altText || "" })),
     options: (product.options || []).map((option) => ({ id: option.id, name: option.name, values: option.values || [] })),
     variants: variants.map((variant) => ({
       id: String(variant.legacyResourceId), title: variant.title, sku: variant.sku || "", barcode: variant.barcode || "",
@@ -198,7 +214,7 @@ export async function listShopifyProducts() {
     const data = await graphql(`query AdminProducts($after: String) { products(first: 100, after: $after, sortKey: TITLE, reverse: false) { nodes { ${PRODUCT_FIELDS} } pageInfo { hasNextPage endCursor } } }`, { after });
     for (const product of data.products.nodes) {
       const variants = product.variants.pageInfo.hasNextPage ? await completeVariants(product) : product.variants.nodes;
-      products.push(normalizeProduct(product, variants));
+      products.push(normalizeProduct(product, variants, await completeMedia(product)));
     }
     hasNextPage = data.products.pageInfo.hasNextPage;
     after = data.products.pageInfo.endCursor;
@@ -296,7 +312,7 @@ export async function updateShopifyProduct(legacyId, fields) {
   const product = refreshed.product;
   if (!product) return null;
   const refreshedVariants = product.variants.pageInfo.hasNextPage ? await completeVariants(product) : product.variants.nodes;
-  return normalizeProduct(product, refreshedVariants);
+  return normalizeProduct(product, refreshedVariants, await completeMedia(product));
 }
 
 export async function createShopifyVariant(productLegacyId, input) {
@@ -325,7 +341,7 @@ export async function createShopifyVariant(productLegacyId, input) {
   const refreshed = await graphql(`query AdminProductForVariant($id: ID!) { product(id: $id) { ${PRODUCT_FIELDS} } }`, { id: productId });
   if (!refreshed.product) return null;
   const variants = refreshed.product.variants.pageInfo.hasNextPage ? await completeVariants(refreshed.product) : refreshed.product.variants.nodes;
-  return normalizeProduct(refreshed.product, variants);
+  return normalizeProduct(refreshed.product, variants, await completeMedia(refreshed.product));
 }
 
 export async function deleteShopifyVariant(productLegacyId, variantLegacyId) {
@@ -342,7 +358,39 @@ export async function deleteShopifyVariant(productLegacyId, variantLegacyId) {
   const refreshed = await graphql(`query AdminProductAfterVariantDelete($id: ID!) { product(id: $id) { ${PRODUCT_FIELDS} } }`, { id: productId });
   if (!refreshed.product) return null;
   const remaining = refreshed.product.variants.pageInfo.hasNextPage ? await completeVariants(refreshed.product) : refreshed.product.variants.nodes;
-  return normalizeProduct(refreshed.product, remaining);
+  return normalizeProduct(refreshed.product, remaining, await completeMedia(refreshed.product));
+}
+
+export async function addShopifyProductImage(productLegacyId, source, alt) {
+  let url;
+  try { url = new URL(source); }
+  catch { throw Object.assign(new Error("La dirección de imagen no es válida."), { status: 422, code: "invalid_product_image_url" }); }
+  if (url.protocol !== "https:" || url.username || url.password || isIP(url.hostname) || ["localhost", "127.0.0.1", "::1"].includes(url.hostname.toLowerCase()) || /\.(local|localhost|internal|test)$/.test(url.hostname.toLowerCase())) throw Object.assign(new Error("La imagen debe estar en una dirección HTTPS pública."), { status: 422, code: "invalid_product_image_url" });
+  const productId = `gid://shopify/Product/${productLegacyId}`;
+  const result = await graphql(`mutation AddProductImage($product: ProductUpdateInput!, $media: [CreateMediaInput!]) { productUpdate(product: $product, media: $media) { product { id } userErrors { field message } } }`, {
+    product: { id: productId }, media: [{ originalSource: url.toString(), alt, mediaContentType: "IMAGE" }]
+  });
+  userErrors(result, "productUpdate");
+  const refreshed = await graphql(`query ProductAfterMediaChange($id: ID!) { product(id: $id) { ${PRODUCT_FIELDS} } }`, { id: productId });
+  if (!refreshed.product) return null;
+  const variants = refreshed.product.variants.pageInfo.hasNextPage ? await completeVariants(refreshed.product) : refreshed.product.variants.nodes;
+  return normalizeProduct(refreshed.product, variants, await completeMedia(refreshed.product));
+}
+
+export async function deleteShopifyProductMedia(productLegacyId, mediaId) {
+  const productId = `gid://shopify/Product/${productLegacyId}`;
+  const data = await graphql(`query AdminProductBeforeMediaDelete($id: ID!) { product(id: $id) { ${PRODUCT_FIELDS} } }`, { id: productId });
+  const product = data.product;
+  if (!product) return null;
+  const media = await completeMedia(product);
+  if (!media.some((item) => item.id === mediaId)) return null;
+  const result = await graphql(`mutation DeleteProductMedia($productId: ID!, $mediaIds: [ID!]!) { productDeleteMedia(productId: $productId, mediaIds: $mediaIds) { deletedMediaIds mediaUserErrors { field message } } }`, { productId, mediaIds: [mediaId] });
+  const errors = result.productDeleteMedia?.mediaUserErrors || [];
+  if (errors.length) throw Object.assign(new Error(errors.map((error) => error.message).join(" · ").slice(0, 600)), { status: 422, code: "shopify_media_validation_error" });
+  const refreshed = await graphql(`query ProductAfterMediaChange($id: ID!) { product(id: $id) { ${PRODUCT_FIELDS} } }`, { id: productId });
+  if (!refreshed.product) return null;
+  const variants = refreshed.product.variants.pageInfo.hasNextPage ? await completeVariants(refreshed.product) : refreshed.product.variants.nodes;
+  return normalizeProduct(refreshed.product, variants, await completeMedia(refreshed.product));
 }
 
 export async function adjustShopifyInventory(productId, variantId, locationId, delta) {

@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { CURRENCY, getPublicCatalog, listAdminProducts, loadProductOverrides, paymentMode, priceCart, updateProduct } from "./server/catalog.mjs";
 import { createOrder, createRequest, findOrder, getUpload, listOrders, markEventProcessed, prepareStorage, saveUpload, updateOrder, UPLOAD_DIR } from "./server/storage.mjs";
 import { assertStripeReady, createCheckoutSession, retrieveCheckoutSession, verifyStripeSignature } from "./server/stripe.mjs";
-import { adjustShopifyInventory, cancelShopifyOrder, createShopifyVariant, deleteShopifyVariant, fulfillShopifyOrder, listShopifyOrders, listShopifyProducts, shopifyConfigured, updateShopifyOrder, updateShopifyProduct } from "./server/shopify.mjs";
+import { addShopifyProductImage, adjustShopifyInventory, cancelShopifyOrder, createShopifyVariant, deleteShopifyProductMedia, deleteShopifyVariant, fulfillShopifyOrder, listShopifyOrders, listShopifyProducts, shopifyConfigured, updateShopifyOrder, updateShopifyProduct } from "./server/shopify.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)));
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
@@ -204,6 +204,23 @@ async function handleAdmin(request, response, url) {
   if (path === "/api/admin/products" && request.method === "GET") {
     if (shopifyConfigured()) return send(response, 200, { products: await listShopifyProducts(), mode: "shopify", source: "shopify" });
     return send(response, 200, { products: listAdminProducts(), mode: paymentMode(process.env), source: "local" });
+  }
+  const mediaRoute = path.match(/^\/api\/admin\/products\/(\d{1,24})\/media$/);
+  if (mediaRoute && request.method === "POST") {
+    let body;
+    try { body = await readJson(request); }
+    catch (error) { return fail(response, error.status || 400, error.message, "invalid_request"); }
+    if (typeof body.source !== "string" || body.source.length > 2048 || typeof body.alt !== "string" || body.alt.length > 512) return fail(response, 422, "Indica la URL HTTPS pública y el texto alternativo de la imagen.", "invalid_product_image");
+    const product = await addShopifyProductImage(mediaRoute[1], body.source, cleanText(body.alt, 512));
+    return product ? send(response, 200, { product }) : fail(response, 404, "No encontramos ese producto en Shopify.", "product_not_found");
+  }
+  if (mediaRoute && request.method === "DELETE") {
+    let body;
+    try { body = await readJson(request); }
+    catch (error) { return fail(response, error.status || 400, error.message, "invalid_request"); }
+    if (typeof body.mediaId !== "string" || !body.mediaId.startsWith("gid://shopify/")) return fail(response, 422, "La referencia de imagen no es válida.", "invalid_product_media");
+    const product = await deleteShopifyProductMedia(mediaRoute[1], body.mediaId);
+    return product ? send(response, 200, { product }) : fail(response, 404, "No encontramos esa imagen en el producto indicado.", "product_media_not_found");
   }
   const variantRoute = path.match(/^\/api\/admin\/products\/(\d{1,24})\/variants(?:\/(\d{1,24}))?$/);
   if (variantRoute && request.method === "POST" && !variantRoute[2]) {

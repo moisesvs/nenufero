@@ -120,7 +120,7 @@ function renderProducts() {
   if (catalogSource === "shopify") {
     header.innerHTML = "<tr><th>Producto</th><th>Marca y tipo</th><th>Etiquetas y estado</th><th>Variantes, precio e inventario</th><th></th></tr>";
     productsList.innerHTML = visibleProducts.map((product) => `<tr data-sku="${escapeHtml(product.id)}" class="shopify-product-row">
-      <td><label class="shopify-product-field">Nombre<input type="text" data-field="title" value="${escapeHtml(product.title)}" maxlength="255"></label><label class="shopify-product-field">Descripción HTML<textarea data-field="descriptionHtml" maxlength="40000">${escapeHtml(product.descriptionHtml)}</textarea></label><span class="product-sku">${escapeHtml(product.handle)} · ${escapeHtml(product.id)}</span></td>
+      <td><label class="shopify-product-field">Nombre<input type="text" data-field="title" value="${escapeHtml(product.title)}" maxlength="255"></label><label class="shopify-product-field">Descripción HTML<textarea data-field="descriptionHtml" maxlength="40000">${escapeHtml(product.descriptionHtml)}</textarea></label><span class="product-sku">${escapeHtml(product.handle)} · ${escapeHtml(product.id)}</span><div class="media-editor"><strong>Imágenes y archivos</strong><div class="media-grid">${product.media.map((media) => `<figure class="media-item">${media.url ? `<img src="${escapeHtml(media.url)}" alt="${escapeHtml(media.imageAlt || media.alt)}" loading="lazy">` : `<span class="media-type">${escapeHtml(media.type)} · ${escapeHtml(media.status)}</span>`}<figcaption>${escapeHtml(media.alt || "Sin texto alternativo")}</figcaption><button type="button" data-delete-media data-media-id="${escapeHtml(media.id)}">Eliminar</button></figure>`).join("") || `<span class="variant-help">Este producto no tiene imágenes.</span>`}</div><label class="shopify-product-field">URL pública de imagen HTTPS<input type="url" data-media-source placeholder="https://…" maxlength="2048"></label><label class="shopify-product-field">Texto alternativo<input type="text" data-media-alt maxlength="512" placeholder="Describe la imagen"></label><button class="product-save" type="button" data-add-media>Añadir imagen</button></div></td>
       <td><label class="shopify-product-field">Marca<input type="text" data-field="vendor" value="${escapeHtml(product.vendor)}" maxlength="255"></label><label class="shopify-product-field">Tipo<input type="text" data-field="category" value="${escapeHtml(product.category)}" maxlength="255"></label></td>
       <td><label class="shopify-product-field">Etiquetas, separadas por comas<input type="text" data-field="tags" value="${escapeHtml(product.tags.join(", "))}" maxlength="2000"></label><label class="shopify-product-field">Publicación<select data-field="status"><option value="ACTIVE" ${product.status === "ACTIVE" ? "selected" : ""}>Activo</option><option value="DRAFT" ${product.status === "DRAFT" ? "selected" : ""}>Borrador</option><option value="ARCHIVED" ${product.status === "ARCHIVED" ? "selected" : ""}>Archivado</option></select></label><span class="product-sku">Inventario total: ${escapeHtml(product.totalInventory)}</span></td>
       <td><div class="variant-editor">${product.variants.map((variant) => `<div class="variant-row" data-variant-id="${escapeHtml(variant.id)}"><strong>${escapeHtml(variant.title)}</strong><button class="variant-delete" type="button" data-delete-variant aria-label="Eliminar variante ${escapeHtml(variant.title)}">Eliminar variante</button><span>${escapeHtml(variant.inventoryQuantity)} unidades totales · ${variant.inventoryTracked ? "inventario por ubicación" : "seguimiento de stock desactivado"}</span><label>Precio <input type="number" data-variant-price min="0" step="0.01" value="${escapeHtml(variant.price)}"></label><label>Precio comparativo <input type="number" data-variant-compare min="0" step="0.01" value="${escapeHtml(variant.compareAtPrice)}" placeholder="Sin precio"></label><label>SKU <input type="text" data-variant-sku maxlength="100" value="${escapeHtml(variant.sku)}"></label><label>Código de barras <input type="text" data-variant-barcode maxlength="100" value="${escapeHtml(variant.barcode)}"></label>${variant.inventoryTracked ? `<div class="inventory-editor">${variant.inventoryLocations.map((location) => `<div class="inventory-location"><span><strong>${escapeHtml(location.name)}</strong> · ${escapeHtml(location.available)} disponibles</span><label for="delta-${escapeHtml(variant.id)}-${escapeHtml(location.id)}">Ajuste</label><input id="delta-${escapeHtml(variant.id)}-${escapeHtml(location.id)}" type="number" step="1" min="-10000" max="10000" data-inventory-delta placeholder="+ / −"><button type="button" data-adjust-inventory data-location-id="${escapeHtml(location.id)}">Aplicar</button></div>`).join("") || `<span>Sin ubicaciones de inventario.</span>`}</div>` : ""}</div>`).join("")}${product.options.some((option) => option.name !== "Title") ? `<div class="variant-add" data-variant-form><strong>Añadir variante</strong>${product.options.filter((option) => option.name !== "Title").map((option) => `<label>${escapeHtml(option.name)}<input type="text" data-new-option="${escapeHtml(option.name)}" maxlength="255" placeholder="${escapeHtml(option.name)}" required></label>`).join("")}<label>Precio<input type="number" data-new-price min="0" step="0.01" required></label><label>Precio comparativo<input type="number" data-new-compare min="0" step="0.01" placeholder="Opcional"></label><label>SKU<input type="text" data-new-sku maxlength="100"></label><label>Código de barras<input type="text" data-new-barcode maxlength="100"></label><button type="button" data-add-variant>Añadir variante</button></div>` : `<p class="variant-help">Para añadir opciones o variantes, configura primero las opciones del producto en Shopify.</p>`}</div></td>
@@ -235,6 +235,38 @@ ordersList.addEventListener("change", async (event) => {
 });
 
 productsList.addEventListener("click", async (event) => {
+  const deleteMediaButton = event.target.closest("[data-delete-media]");
+  if (deleteMediaButton) {
+    const productRow = deleteMediaButton.closest("[data-sku]");
+    const product = products.find((entry) => entry.id === productRow.dataset.sku);
+    if (!window.confirm(`¿Eliminar este archivo multimedia de «${product?.title || "este producto"}» en Shopify? No se puede deshacer.`)) return;
+    deleteMediaButton.disabled = true;
+    try {
+      const result = await api(`/api/admin/products/${encodeURIComponent(productRow.dataset.sku)}/media`, { method: "DELETE", body: JSON.stringify({ mediaId: deleteMediaButton.dataset.mediaId }) });
+      Object.assign(product, result.product);
+      renderProducts();
+      notify(`Archivo eliminado de ${product.title}.`);
+    } catch (error) { notify(error.message, true); deleteMediaButton.disabled = false; }
+    return;
+  }
+  const addMediaButton = event.target.closest("[data-add-media]");
+  if (addMediaButton) {
+    const productRow = addMediaButton.closest("[data-sku]");
+    const product = products.find((entry) => entry.id === productRow.dataset.sku);
+    const source = productRow.querySelector("[data-media-source]").value.trim();
+    const alt = productRow.querySelector("[data-media-alt]").value.trim();
+    let validUrl = false;
+    try { validUrl = new URL(source).protocol === "https:"; } catch {}
+    if (!validUrl) return notify("Indica una URL HTTPS pública para la imagen.", true);
+    addMediaButton.disabled = true;
+    try {
+      const result = await api(`/api/admin/products/${encodeURIComponent(productRow.dataset.sku)}/media`, { method: "POST", body: JSON.stringify({ source, alt }) });
+      Object.assign(product, result.product);
+      renderProducts();
+      notify(`Imagen añadida a ${product.title}. Shopify puede tardar unos instantes en procesarla.`);
+    } catch (error) { notify(error.message, true); addMediaButton.disabled = false; }
+    return;
+  }
   const deleteVariantButton = event.target.closest("[data-delete-variant]");
   if (deleteVariantButton) {
     const productRow = deleteVariantButton.closest("[data-sku]");
