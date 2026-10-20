@@ -8,9 +8,10 @@ let mutations = Promise.resolve();
 
 export async function prepareStorage() {
   await mkdir(UPLOAD_DIR, { recursive: true });
-  for (const file of ["orders.json", "requests.json", "uploads.json", "processed-events.json"]) {
+  for (const file of ["orders.json", "requests.json", "uploads.json", "processed-events.json", "catalog-overrides.json"]) {
+    const empty = file === "catalog-overrides.json" ? "{}\n" : "[]\n";
     try { await readFile(join(DATA_DIR, file), "utf8"); }
-    catch { await writeFile(join(DATA_DIR, file), "[]\n", { flag: "wx" }).catch(() => {}); }
+    catch { await writeFile(join(DATA_DIR, file), empty, { flag: "wx" }).catch(() => {}); }
   }
 }
 
@@ -44,6 +45,10 @@ export function createOrder(order) {
 
 export function findOrder(id) {
   return readCollection("orders.json").then((orders) => orders.find((order) => order.id === id) || null);
+}
+
+export function listOrders() {
+  return readCollection("orders.json");
 }
 
 export function updateOrder(id, updater) {

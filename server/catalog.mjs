@@ -1,4 +1,8 @@
 export const CURRENCY = "eur";
+import { randomUUID } from "node:crypto";
+import { readFile, rename, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { DATA_DIR } from "./storage.mjs";
 
 const demoProducts = [
   { sku: "camiseta", title: "Camiseta personalizada", category: "Personalizados", unit: "unidad", model: "unit", demoRate: 1890 },
@@ -16,6 +20,33 @@ const demoProducts = [
   { sku: "corte-laser", title: "Corte láser · pieza de prueba", category: "Corte láser", unit: "pieza", model: "unit", demoRate: 990 }
 ];
 
+const overridesFile = join(DATA_DIR, "catalog-overrides.json");
+let productOverrides = {};
+let overridesMutation = Promise.resolve();
+
+export async function loadProductOverrides() {
+  try {
+    const parsed = JSON.parse(await readFile(overridesFile, "utf8"));
+    productOverrides = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    productOverrides = {};
+  }
+}
+
+export async function updateProduct(sku, fields) {
+  const product = demoProducts.find((entry) => entry.sku === sku);
+  if (!product) return null;
+  const task = overridesMutation.then(async () => {
+    productOverrides[sku] = { ...(productOverrides[sku] || {}), ...fields, updatedAt: new Date().toISOString() };
+    const temporary = `${overridesFile}.${randomUUID()}.tmp`;
+    await writeFile(temporary, `${JSON.stringify(productOverrides, null, 2)}\n`, { mode: 0o600 });
+    await rename(temporary, overridesFile);
+    return getProduct(sku);
+  });
+  overridesMutation = task.catch(() => {});
+  return task;
+}
+
 function parseLiveRates(env = process.env) {
   try {
     const parsed = JSON.parse(env.STRIPE_LIVE_RATES_EUR_CENTS || "{}");
@@ -26,12 +57,21 @@ function parseLiveRates(env = process.env) {
   }
 }
 
+function liveRate(product, envRates) {
+  return Object.hasOwn(product, "stripeRateCents") ? product.stripeRateCents : (envRates[product.sku] ?? null);
+}
+
 export function paymentMode(env = process.env) {
   return env.PAYMENT_MODE === "stripe" ? "stripe" : "simulated";
 }
 
 export function getProduct(sku) {
-  return demoProducts.find((product) => product.sku === sku) || null;
+  const product = demoProducts.find((entry) => entry.sku === sku);
+  return product ? { ...product, active: true, ...productOverrides[sku] } : null;
+}
+
+export function listAdminProducts() {
+  return demoProducts.map(({ sku }) => getProduct(sku));
 }
 
 export function getPublicCatalog(env = process.env) {
@@ -49,11 +89,16 @@ export function getPublicCatalog(env = process.env) {
       : "Pago seguro con Stripe. El importe se calcula con las tarifas aprobadas por Nenufero.",
     shippingCents: shippingAvailable ? shippingCents : null,
     shippingAvailable,
-    products: demoProducts.map(({ demoRate, ...product }) => ({
-      ...product,
-      unitAmountCents: mode === "simulated" ? demoRate : (rates[product.sku] ?? null),
-      available: mode === "simulated" || Number.isSafeInteger(rates[product.sku])
-    }))
+    products: demoProducts.map(({ sku }) => {
+      const product = getProduct(sku);
+      const stripeRate = liveRate(product, rates);
+      const { demoRate, stripeRateCents, ...publicProduct } = product;
+      return {
+        ...publicProduct,
+        unitAmountCents: mode === "simulated" ? product.demoRate : stripeRate,
+        available: product.active !== false && (mode === "simulated" || Number.isSafeInteger(stripeRate))
+      };
+    })
   };
 }
 
@@ -65,12 +110,12 @@ export function priceCart(lines, env = process.env) {
   const rates = parseLiveRates(env);
   const priced = lines.map((line) => {
     const product = getProduct(line?.sku);
-    if (!product) throw new Error("Uno de los productos ya no está disponible.");
+    if (!product || product.active === false) throw new Error("Uno de los productos ya no está disponible.");
     const quantity = Number(line.quantity);
     if (!Number.isFinite(quantity) || quantity <= 0 || quantity > 100 || (product.model !== "meter" && !Number.isInteger(quantity))) {
       throw new Error(`Revisa la cantidad de ${product.title.toLowerCase()}.`);
     }
-    const rate = mode === "simulated" ? product.demoRate : rates[product.sku];
+    const rate = mode === "simulated" ? product.demoRate : liveRate(product, rates);
     if (!Number.isSafeInteger(rate) || rate <= 0) {
       throw new Error(`Falta configurar el precio aprobado de ${product.title.toLowerCase()} antes de activar Stripe.`);
     }

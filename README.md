@@ -12,6 +12,12 @@ Requiere Node.js 20 o superior. Ejecuta `npm start` desde la carpeta del proyect
 
 El modo inicial es simulado: los precios de muestra son inventados para probar el flujo, no representan tarifas comerciales y no realizan cargos. Completa el carrito y los datos de contacto para crear un pedido `NEN-…` de demostración. Formularios de proyecto y visita también se guardan localmente y no se envían a Nenufero.
 
+## Panel de administración local
+
+Abre `/admin/` con el servidor local iniciado. En `.env` configura `ADMIN_PASSWORD` con al menos 12 caracteres y `ADMIN_SESSION_SECRET` con un secreto aleatorio; reinicia `npm start` después de cambiarlo. El panel usa una sesión firmada en cookie `HttpOnly`, `SameSite=Strict`, permite revisar todos los pedidos locales, actualizar su estado de preparación y notas internas, y editar el nombre, categoría, disponibilidad y tarifas de los 13 SKU actuales. Los cambios de catálogo se guardan en `data/catalog-overrides.json`, excluido de Git.
+
+Este almacenamiento es local al prototipo. La vista previa estática de Netlify no ejecuta `server.mjs` ni comparte estos pedidos o cambios; para administración remota y pedidos de la tienda real se necesita conectar el panel a Shopify o desplegar una API y almacenamiento persistente protegidos.
+
 ## Stripe, para una fase posterior
 
 Stripe queda desactivado por defecto. Antes de procesar pagos reales, Nenufero debe aprobar las tarifas de cada SKU, los portes y las condiciones de venta. Las tarifas de demostración nunca se usan con Stripe. Después, configura `.env` a partir de `.env.example` con `PAYMENT_MODE=stripe`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `PUBLIC_BASE_URL`, `STRIPE_LIVE_RATES_EUR_CENTS` (JSON de SKU a céntimos) y, si se ofrece envío, `STRIPE_SHIPPING_EUR_CENTS`.

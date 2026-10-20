@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f4ef">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Administración | Nenufero</title>
+  <link rel="icon" href="../public/assets/nenufero-logo.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+  <script src="admin.js" defer></script>
+</head>
+<body>
+  <header class="admin-topbar">
+    <a class="admin-brand" href="../index.html"><img src="../public/assets/nenufero-logo.png" alt=""><span>NENUFERO <small>ADMIN</small></span></a>
+    <a class="back-site" href="../index.html">Volver a la web <span aria-hidden="true">↗</span></a>
+  </header>
+  <main class="admin-main">
+    <section id="login-panel" class="login-card" hidden>
+      <p class="eyebrow">ACCESO PRIVADO</p><h1>Administración<br><span>Nenufero.</span></h1>
+      <p class="login-intro">Gestiona pedidos y catálogo en un espacio protegido.</p>
+      <form id="login-form"><label for="admin-password">Contraseña de administrador</label><input id="admin-password" name="password" type="password" autocomplete="current-password" required><button class="primary-button" type="submit">Entrar <span aria-hidden="true">↗</span></button><p id="login-message" class="form-message" role="alert"></p></form>
+      <p id="setup-message" class="setup-message" hidden>El acceso aún no está configurado. Añade <code>ADMIN_PASSWORD</code> (mínimo 12 caracteres) al archivo <code>.env</code> del servidor y reinícialo.</p>
+    </section>
+
+    <section id="dashboard" hidden>
+      <div class="dashboard-heading"><div><p class="eyebrow">ESPACIO DE TRABAJO</p><h1>Gestión <span>Nenufero</span></h1><p>Pedidos registrados y catálogo del servidor.</p></div><button id="logout-button" class="quiet-button" type="button">Cerrar sesión</button></div>
+      <div class="stats-grid" id="stats-grid"></div>
+      <nav class="admin-tabs" aria-label="Secciones de administración"><button type="button" class="tab-button is-active" data-admin-view="orders">Pedidos <span id="orders-tab-count">0</span></button><button type="button" class="tab-button" data-admin-view="products">Productos <span id="products-tab-count">0</span></button></nav>
+      <section id="orders-view" class="admin-view">
+        <div class="view-heading"><div><p class="eyebrow">VENTAS Y PRODUCCIÓN</p><h2>Pedidos</h2></div><button type="button" class="quiet-button" data-refresh>Actualizar</button></div>
+        <div class="toolbar"><label class="search-field"><span class="visually-hidden">Buscar pedidos</span><input id="order-search" type="search" placeholder="Buscar referencia, cliente o producto"></label><label><span class="visually-hidden">Filtrar por estado</span><select id="order-filter"><option value="all">Todos los estados</option><option value="new">Nuevo</option><option value="confirmed">Confirmado</option><option value="in_production">En producción</option><option value="ready">Listo</option><option value="completed">Completado</option><option value="cancelled">Cancelado</option></select></label></div>
+        <div id="orders-list" class="orders-list" aria-live="polite"></div>
+      </section>
+      <section id="products-view" class="admin-view" hidden>
+        <div class="view-heading"><div><p class="eyebrow">CATÁLOGO DE LA TIENDA</p><h2>Productos</h2></div><p id="pricing-mode" class="mode-pill"></p></div>
+        <p class="catalog-help">Edita los productos que ya usa la tienda. Desactivar un producto lo bloquea para nuevos pedidos y conserva su historial.</p>
+        <div class="table-wrap"><table class="product-table"><thead><tr><th>Producto y SKU</th><th>Categoría</th><th>Precio de demostración</th><th>Tarifa Stripe</th><th>Estado</th><th></th></tr></thead><tbody id="products-list"></tbody></table></div>
+        <p class="catalog-footnote">Los precios de demostración siguen siendo ilustrativos. Las tarifas Stripe solo se usan si el modo de pago está configurado para Stripe.</p>
+      </section>
+      <p id="dashboard-message" class="dashboard-message" role="status"></p>
+    </section>
+  </main>
+  <template id="order-template"><article class="order-card"></article></template>
+</body>
+</html>

@@ -1,11 +1,11 @@
 import { createServer } from "node:http";
-import { randomUUID } from "node:crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CURRENCY, getPublicCatalog, paymentMode, priceCart } from "./server/catalog.mjs";
-import { createOrder, createRequest, findOrder, getUpload, markEventProcessed, prepareStorage, saveUpload, updateOrder } from "./server/storage.mjs";
+import { CURRENCY, getPublicCatalog, listAdminProducts, loadProductOverrides, paymentMode, priceCart, updateProduct } from "./server/catalog.mjs";
+import { createOrder, createRequest, findOrder, getUpload, listOrders, markEventProcessed, prepareStorage, saveUpload, updateOrder, UPLOAD_DIR } from "./server/storage.mjs";
 import { assertStripeReady, createCheckoutSession, retrieveCheckoutSession, verifyStripeSignature } from "./server/stripe.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)));
@@ -19,6 +19,8 @@ const mimeTypes = {
   ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".txt": "text/plain; charset=utf-8"
 };
 const requestWindows = new Map();
+const FULFILLMENT_STATUSES = new Set(["new", "confirmed", "in_production", "ready", "completed", "cancelled"]);
+const ADMIN_COOKIE = "nenufero_admin";
 
 function loadEnvFile() {
   return readFile(resolve(ROOT, ".env"), "utf8").then((contents) => {
@@ -91,6 +93,132 @@ function cleanText(value, max = 200) {
 
 function validEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value) && value.length <= 254;
+}
+
+function adminPasswordConfigured() {
+  return typeof process.env.ADMIN_PASSWORD === "string" && process.env.ADMIN_PASSWORD.length >= 12;
+}
+
+function adminSignature(payload) {
+  const secret = process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || "";
+  return createHmac("sha256", secret).update(payload).digest("base64url");
+}
+
+function isAdminAuthenticated(request) {
+  if (!adminPasswordConfigured()) return false;
+  const cookieHeader = String(request.headers.cookie || "");
+  const cookie = cookieHeader.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${ADMIN_COOKIE}=`));
+  if (!cookie) return false;
+  const token = cookie.slice(ADMIN_COOKIE.length + 1);
+  const separator = token.lastIndexOf(".");
+  if (separator < 1) return false;
+  const payload = token.slice(0, separator);
+  const supplied = Buffer.from(token.slice(separator + 1));
+  const expected = Buffer.from(adminSignature(payload));
+  if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return false;
+  const expiresAt = Number(payload);
+  return Number.isSafeInteger(expiresAt) && expiresAt > Math.floor(Date.now() / 1000);
+}
+
+function adminCookie(request, maxAge) {
+  const secure = request.socket.encrypted || request.headers["x-forwarded-proto"] === "https";
+  const expiresAt = Math.floor(Date.now() / 1000) + 8 * 60 * 60;
+  const value = maxAge ? `${expiresAt}.${adminSignature(String(expiresAt))}` : "";
+  return `${ADMIN_COOKIE}=${value}; Path=/api/admin; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secure ? "; Secure" : ""}`;
+}
+
+function requireAdmin(request, response) {
+  if (!isAdminAuthenticated(request)) {
+    fail(response, 401, "Inicia sesión para acceder al panel de administración.", "admin_auth_required");
+    return false;
+  }
+  return true;
+}
+
+async function handleAdmin(request, response, url) {
+  const path = url.pathname;
+  if (path === "/api/admin/session" && request.method === "GET") {
+    return send(response, 200, { configured: adminPasswordConfigured(), authenticated: isAdminAuthenticated(request) });
+  }
+  if (path === "/api/admin/session" && request.method === "POST") {
+    if (!sameOrigin(request)) return fail(response, 403, "No se pudo validar el origen de la solicitud.", "invalid_origin");
+    if (!rateLimit(request, 6)) return fail(response, 429, "Demasiados intentos. Espera un minuto.", "rate_limited");
+    if (!adminPasswordConfigured()) return fail(response, 503, "Configura ADMIN_PASSWORD (mínimo 12 caracteres) en el entorno del servidor.", "admin_not_configured");
+    let body;
+    try { body = await readJson(request); }
+    catch (error) { return fail(response, error.status || 400, error.message, "invalid_request"); }
+    const supplied = Buffer.from(typeof body.password === "string" ? body.password : "");
+    const expected = Buffer.from(process.env.ADMIN_PASSWORD);
+    if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return fail(response, 401, "La contraseña no es correcta.", "invalid_credentials");
+    return send(response, 200, { authenticated: true }, { "Set-Cookie": adminCookie(request, 8 * 60 * 60) });
+  }
+  if (path === "/api/admin/session" && request.method === "DELETE") {
+    if (!sameOrigin(request)) return fail(response, 403, "No se pudo validar el origen de la solicitud.", "invalid_origin");
+    return send(response, 200, { authenticated: false }, { "Set-Cookie": adminCookie(request, 0) });
+  }
+  if (!path.startsWith("/api/admin/")) return false;
+  if (!sameOrigin(request)) return fail(response, 403, "No se pudo validar el origen de la solicitud.", "invalid_origin");
+  if (!requireAdmin(request, response)) return;
+
+  if (path === "/api/admin/orders" && request.method === "GET") {
+    const orders = await listOrders();
+    orders.sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+    return send(response, 200, { orders: orders.map((order) => ({ ...order, fulfillmentStatus: order.fulfillmentStatus || "new" })) });
+  }
+  const orderMatch = path.match(/^\/api\/admin\/orders\/(NEN-[A-Z0-9-]{12,40})$/);
+  if (orderMatch && request.method === "PATCH") {
+    let body;
+    try { body = await readJson(request); }
+    catch (error) { return fail(response, error.status || 400, error.message, "invalid_request"); }
+    const allowedStatuses = [...FULFILLMENT_STATUSES];
+    if (body.fulfillmentStatus !== undefined && !FULFILLMENT_STATUSES.has(body.fulfillmentStatus)) {
+      return fail(response, 422, `Estado no válido. Usa: ${allowedStatuses.join(", ")}.`, "invalid_fulfillment_status");
+    }
+    if (body.adminNote !== undefined && (typeof body.adminNote !== "string" || body.adminNote.length > 2000)) return fail(response, 422, "La nota no puede superar los 2.000 caracteres.", "invalid_admin_note");
+    const updated = await updateOrder(orderMatch[1], (order) => ({
+      ...order,
+      ...(body.fulfillmentStatus !== undefined ? { fulfillmentStatus: body.fulfillmentStatus } : {}),
+      ...(body.adminNote !== undefined ? { adminNote: cleanText(body.adminNote, 2000) } : {}),
+      adminUpdatedAt: new Date().toISOString()
+    }));
+    return updated ? send(response, 200, { order: { ...updated, fulfillmentStatus: updated.fulfillmentStatus || "new" } }) : fail(response, 404, "No encontramos ese pedido.", "order_not_found");
+  }
+  if (path === "/api/admin/products" && request.method === "GET") return send(response, 200, { products: listAdminProducts(), mode: paymentMode(process.env) });
+  const uploadMatch = path.match(/^\/api\/admin\/uploads\/([a-f0-9-]{36})$/i);
+  if (uploadMatch && request.method === "GET") {
+    const upload = await getUpload(uploadMatch[1]);
+    if (!upload) return fail(response, 404, "No encontramos ese archivo.", "upload_not_found");
+    const filePath = resolve(upload.path);
+    if (!filePath.startsWith(`${resolve(UPLOAD_DIR)}${sep}`)) return fail(response, 404, "No encontramos ese archivo.", "upload_not_found");
+    response.writeHead(200, {
+      "Content-Type": mimeTypes[extname(filePath).toLowerCase()] || "application/octet-stream",
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(upload.fileName || "referencia")}`,
+      "Content-Length": upload.bytes,
+      "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "default-src 'none'; sandbox"
+    });
+    const stream = createReadStream(filePath);
+    stream.on("error", () => { if (!response.headersSent) fail(response, 404, "No encontramos ese archivo.", "upload_not_found"); else response.destroy(); });
+    stream.pipe(response);
+    return;
+  }
+  const productMatch = path.match(/^\/api\/admin\/products\/([a-z0-9-]{1,80})$/);
+  if (productMatch && request.method === "PATCH") {
+    let body;
+    try { body = await readJson(request); }
+    catch (error) { return fail(response, error.status || 400, error.message, "invalid_request"); }
+    const title = cleanText(body.title, 120);
+    const category = cleanText(body.category, 80);
+    const demoRateCents = Number(body.demoRateCents);
+    const stripeRateCents = body.stripeRateCents === null || body.stripeRateCents === "" ? null : Number(body.stripeRateCents);
+    if (!title || !category || !Number.isSafeInteger(demoRateCents) || demoRateCents < 1 || demoRateCents > MAX_TOTAL_CENTS || (stripeRateCents !== null && (!Number.isSafeInteger(stripeRateCents) || stripeRateCents < 50 || stripeRateCents > MAX_TOTAL_CENTS)) || typeof body.active !== "boolean") {
+      return fail(response, 422, "Revisa nombre, categoría, disponibilidad y tarifas.", "invalid_product");
+    }
+    const product = await updateProduct(productMatch[1], { title, category, demoRate: demoRateCents, stripeRateCents, active: body.active });
+    return product ? send(response, 200, { product }) : fail(response, 404, "No encontramos ese producto.", "product_not_found");
+  }
+  return fail(response, 404, "No encontramos esa ruta del panel.", "not_found");
 }
 
 function publicOrder(order) {
@@ -229,6 +357,7 @@ async function handleCheckout(request, response) {
     subtotalCents: pricing.subtotalCents,
     shippingCents,
     totalCents,
+    fulfillmentStatus: "new",
     stripeSessionId: ""
   };
   await createOrder(record);
@@ -295,6 +424,13 @@ async function handleStripeWebhook(request, response) {
 
 async function api(request, response, url) {
   const path = url.pathname;
+  if (path.startsWith("/api/admin/")) {
+    try { return await handleAdmin(request, response, url); }
+    catch (error) {
+      console.error("Admin API error:", error);
+      return fail(response, 500, "No se pudo completar la acción del panel.", "admin_server_error");
+    }
+  }
   try {
     if (request.method === "GET" && path === "/api/config") return send(response, 200, getPublicCatalog(process.env));
     if (request.method === "GET" && path === "/api/health") return send(response, 200, { ok: true, paymentMode: paymentMode(process.env) });
@@ -350,6 +486,7 @@ async function serveStatic(request, response, pathname) {
 
 await loadEnvFile();
 await prepareStorage();
+await loadProductOverrides();
 if (paymentMode(process.env) === "stripe") {
   try { assertStripeReady(process.env); }
   catch (error) { console.warn(`Stripe sigue desactivado hasta completar la configuración: ${error.message}`); }
