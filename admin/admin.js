@@ -123,7 +123,7 @@ function renderProducts() {
       <td><label class="shopify-product-field">Nombre<input type="text" data-field="title" value="${escapeHtml(product.title)}" maxlength="255"></label><label class="shopify-product-field">Descripción HTML<textarea data-field="descriptionHtml" maxlength="40000">${escapeHtml(product.descriptionHtml)}</textarea></label><span class="product-sku">${escapeHtml(product.handle)} · ${escapeHtml(product.id)}</span></td>
       <td><label class="shopify-product-field">Marca<input type="text" data-field="vendor" value="${escapeHtml(product.vendor)}" maxlength="255"></label><label class="shopify-product-field">Tipo<input type="text" data-field="category" value="${escapeHtml(product.category)}" maxlength="255"></label></td>
       <td><label class="shopify-product-field">Etiquetas, separadas por comas<input type="text" data-field="tags" value="${escapeHtml(product.tags.join(", "))}" maxlength="2000"></label><label class="shopify-product-field">Publicación<select data-field="status"><option value="ACTIVE" ${product.status === "ACTIVE" ? "selected" : ""}>Activo</option><option value="DRAFT" ${product.status === "DRAFT" ? "selected" : ""}>Borrador</option><option value="ARCHIVED" ${product.status === "ARCHIVED" ? "selected" : ""}>Archivado</option></select></label><span class="product-sku">Inventario total: ${escapeHtml(product.totalInventory)}</span></td>
-      <td><div class="variant-editor">${product.variants.map((variant) => `<div class="variant-row" data-variant-id="${escapeHtml(variant.id)}"><strong>${escapeHtml(variant.title)}</strong><span>${escapeHtml(variant.inventoryQuantity)} unidades totales · ${variant.inventoryTracked ? "inventario por ubicación" : "seguimiento de stock desactivado"}</span><label>Precio <input type="number" data-variant-price min="0" step="0.01" value="${escapeHtml(variant.price)}"></label><label>Precio comparativo <input type="number" data-variant-compare min="0" step="0.01" value="${escapeHtml(variant.compareAtPrice)}" placeholder="Sin precio"></label><label>SKU <input type="text" data-variant-sku maxlength="100" value="${escapeHtml(variant.sku)}"></label><label>Código de barras <input type="text" data-variant-barcode maxlength="100" value="${escapeHtml(variant.barcode)}"></label>${variant.inventoryTracked ? `<div class="inventory-editor">${variant.inventoryLocations.map((location) => `<div class="inventory-location"><span><strong>${escapeHtml(location.name)}</strong> · ${escapeHtml(location.available)} disponibles</span><label for="delta-${escapeHtml(variant.id)}-${escapeHtml(location.id)}">Ajuste</label><input id="delta-${escapeHtml(variant.id)}-${escapeHtml(location.id)}" type="number" step="1" min="-10000" max="10000" data-inventory-delta placeholder="+ / −"><button type="button" data-adjust-inventory data-location-id="${escapeHtml(location.id)}">Aplicar</button></div>`).join("") || `<span>Sin ubicaciones de inventario.</span>`}</div>` : ""}</div>`).join("")}</div></td>
+      <td><div class="variant-editor">${product.variants.map((variant) => `<div class="variant-row" data-variant-id="${escapeHtml(variant.id)}"><strong>${escapeHtml(variant.title)}</strong><button class="variant-delete" type="button" data-delete-variant aria-label="Eliminar variante ${escapeHtml(variant.title)}">Eliminar variante</button><span>${escapeHtml(variant.inventoryQuantity)} unidades totales · ${variant.inventoryTracked ? "inventario por ubicación" : "seguimiento de stock desactivado"}</span><label>Precio <input type="number" data-variant-price min="0" step="0.01" value="${escapeHtml(variant.price)}"></label><label>Precio comparativo <input type="number" data-variant-compare min="0" step="0.01" value="${escapeHtml(variant.compareAtPrice)}" placeholder="Sin precio"></label><label>SKU <input type="text" data-variant-sku maxlength="100" value="${escapeHtml(variant.sku)}"></label><label>Código de barras <input type="text" data-variant-barcode maxlength="100" value="${escapeHtml(variant.barcode)}"></label>${variant.inventoryTracked ? `<div class="inventory-editor">${variant.inventoryLocations.map((location) => `<div class="inventory-location"><span><strong>${escapeHtml(location.name)}</strong> · ${escapeHtml(location.available)} disponibles</span><label for="delta-${escapeHtml(variant.id)}-${escapeHtml(location.id)}">Ajuste</label><input id="delta-${escapeHtml(variant.id)}-${escapeHtml(location.id)}" type="number" step="1" min="-10000" max="10000" data-inventory-delta placeholder="+ / −"><button type="button" data-adjust-inventory data-location-id="${escapeHtml(location.id)}">Aplicar</button></div>`).join("") || `<span>Sin ubicaciones de inventario.</span>`}</div>` : ""}</div>`).join("")}${product.options.some((option) => option.name !== "Title") ? `<div class="variant-add" data-variant-form><strong>Añadir variante</strong>${product.options.filter((option) => option.name !== "Title").map((option) => `<label>${escapeHtml(option.name)}<input type="text" data-new-option="${escapeHtml(option.name)}" maxlength="255" placeholder="${escapeHtml(option.name)}" required></label>`).join("")}<label>Precio<input type="number" data-new-price min="0" step="0.01" required></label><label>Precio comparativo<input type="number" data-new-compare min="0" step="0.01" placeholder="Opcional"></label><label>SKU<input type="text" data-new-sku maxlength="100"></label><label>Código de barras<input type="text" data-new-barcode maxlength="100"></label><button type="button" data-add-variant>Añadir variante</button></div>` : `<p class="variant-help">Para añadir opciones o variantes, configura primero las opciones del producto en Shopify.</p>`}</div></td>
       <td><button class="product-save" type="button" data-save-product>Guardar</button></td>
     </tr>`).join("");
     document.querySelector("#pricing-mode").textContent = "CATÁLOGO SHOPIFY";
@@ -235,6 +235,42 @@ ordersList.addEventListener("change", async (event) => {
 });
 
 productsList.addEventListener("click", async (event) => {
+  const deleteVariantButton = event.target.closest("[data-delete-variant]");
+  if (deleteVariantButton) {
+    const productRow = deleteVariantButton.closest("[data-sku]");
+    const variantRow = deleteVariantButton.closest("[data-variant-id]");
+    const product = products.find((entry) => entry.id === productRow.dataset.sku);
+    if (!window.confirm(`¿Eliminar la variante «${variantRow.querySelector("strong").textContent}» de «${product?.title || "este producto"}»? Se borrará de Shopify y no se puede deshacer.`)) return;
+    deleteVariantButton.disabled = true;
+    try {
+      const result = await api(`/api/admin/products/${encodeURIComponent(productRow.dataset.sku)}/variants/${encodeURIComponent(variantRow.dataset.variantId)}`, { method: "DELETE" });
+      Object.assign(product, result.product);
+      renderProducts();
+      renderStats();
+      notify(`Variante eliminada de ${product.title}.`);
+    } catch (error) { notify(error.message, true); deleteVariantButton.disabled = false; }
+    return;
+  }
+  const addVariantButton = event.target.closest("[data-add-variant]");
+  if (addVariantButton) {
+    const productRow = addVariantButton.closest("[data-sku]");
+    const form = addVariantButton.closest("[data-variant-form]");
+    const product = products.find((entry) => entry.id === productRow.dataset.sku);
+    const price = Number(form.querySelector("[data-new-price]").value);
+    const compareAtInput = form.querySelector("[data-new-compare]").value;
+    const compareAtPrice = compareAtInput === "" ? "" : Number(compareAtInput);
+    const optionValues = [...form.querySelectorAll("[data-new-option]")].map((input) => ({ name: input.dataset.newOption, value: input.value.trim() }));
+    if (!Number.isFinite(price) || price < 0 || (compareAtPrice !== "" && (!Number.isFinite(compareAtPrice) || compareAtPrice < 0)) || optionValues.some((option) => !option.value)) return notify("Completa cada opción y escribe un precio válido para la variante.", true);
+    addVariantButton.disabled = true;
+    try {
+      const result = await api(`/api/admin/products/${encodeURIComponent(productRow.dataset.sku)}/variants`, { method: "POST", body: JSON.stringify({ price, compareAtPrice, optionValues, sku: form.querySelector("[data-new-sku]").value, barcode: form.querySelector("[data-new-barcode]").value }) });
+      Object.assign(product, result.product);
+      renderProducts();
+      renderStats();
+      notify(`Variante añadida a ${product.title}.`);
+    } catch (error) { notify(error.message, true); addVariantButton.disabled = false; }
+    return;
+  }
   const inventoryButton = event.target.closest("[data-adjust-inventory]");
   if (inventoryButton) {
     const productRow = inventoryButton.closest("[data-sku]");

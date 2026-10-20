@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { adjustShopifyInventory, cancelShopifyOrder, fulfillShopifyOrder, listShopifyOrders, listShopifyProducts, shopifyConfigured, updateShopifyOrder, updateShopifyProduct } from "../../server/shopify.mjs";
+import { adjustShopifyInventory, cancelShopifyOrder, createShopifyVariant, deleteShopifyVariant, fulfillShopifyOrder, listShopifyOrders, listShopifyProducts, shopifyConfigured, updateShopifyOrder, updateShopifyProduct } from "../../server/shopify.mjs";
 
 const COOKIE_NAME = "nenufero_admin";
 const SESSION_SECONDS = 8 * 60 * 60;
@@ -148,6 +148,21 @@ export async function handler(event) {
       return order ? response(200, { order }) : failure(404, "No encontramos ese pedido.", "order_not_found");
     }
     if (path === "/api/admin/products" && method === "GET") return response(200, { products: await listShopifyProducts(), mode: "shopify", source: "shopify" });
+    const variantRoute = path.match(/^\/api\/admin\/products\/(\d{1,24})\/variants(?:\/(\d{1,24}))?$/);
+    if (variantRoute && method === "POST" && !variantRoute[2]) {
+      const body = requestBody(event);
+      const price = Number(body.price);
+      const compareAt = body.compareAtPrice === "" || body.compareAtPrice === null || body.compareAtPrice === undefined ? "" : Number(body.compareAtPrice);
+      if (!Number.isFinite(price) || price < 0 || price > 1_000_000 || (compareAt !== "" && (!Number.isFinite(compareAt) || compareAt < 0 || compareAt > 1_000_000))) return failure(422, "Revisa el precio de la variante.", "invalid_variant_price");
+      if (typeof body.sku !== "string" || body.sku.length > 100 || typeof body.barcode !== "string" || body.barcode.length > 100) return failure(422, "El SKU y el código de barras no pueden superar 100 caracteres.", "invalid_variant_reference");
+      if (!Array.isArray(body.optionValues) || body.optionValues.length < 1 || body.optionValues.length > 3 || body.optionValues.some((option) => !option || typeof option.name !== "string" || !option.name.trim() || typeof option.value !== "string" || !option.value.trim())) return failure(422, "Indica valores válidos para las opciones de la variante.", "invalid_variant_options");
+      const product = await createShopifyVariant(variantRoute[1], { price: price.toFixed(2), compareAtPrice: compareAt === "" ? "" : compareAt.toFixed(2), sku: body.sku.trim(), barcode: body.barcode.trim(), optionValues: body.optionValues.map(({ name, value }) => ({ name: cleanText(name, 255), value: cleanText(value, 255) })) });
+      return product ? response(200, { product }) : failure(404, "No encontramos ese producto en Shopify.", "product_not_found");
+    }
+    if (variantRoute && method === "DELETE" && variantRoute[2]) {
+      const product = await deleteShopifyVariant(variantRoute[1], variantRoute[2]);
+      return product ? response(200, { product }) : failure(404, "No encontramos esa variante en el producto indicado.", "variant_not_found");
+    }
     const inventoryMatch = path.match(/^\/api\/admin\/products\/(\d{1,24})\/inventory$/);
     if (inventoryMatch && method === "POST") {
       const body = requestBody(event);

@@ -151,7 +151,7 @@ export async function listShopifyOrders() {
 }
 
 const VARIANT_FIELDS = `id legacyResourceId title sku barcode price compareAtPrice inventoryQuantity inventoryPolicy taxable weight weightUnit selectedOptions { name value } inventoryItem { id tracked inventoryLevels(first: 100) { nodes { location { id name } quantities(names: ["available"]) { name quantity } } pageInfo { hasNextPage endCursor } } }`;
-const PRODUCT_FIELDS = `id legacyResourceId title handle descriptionHtml vendor productType status tags totalInventory featuredImage { url altText } variants(first: 100) { nodes { ${VARIANT_FIELDS} } pageInfo { hasNextPage endCursor } }`;
+const PRODUCT_FIELDS = `id legacyResourceId title handle descriptionHtml vendor productType status tags totalInventory featuredImage { url altText } options { id name values } variants(first: 100) { nodes { ${VARIANT_FIELDS} } pageInfo { hasNextPage endCursor } }`;
 
 async function completeVariants(product) {
   const variants = [...product.variants.nodes];
@@ -173,6 +173,7 @@ function normalizeProduct(product, variants = product.variants.nodes) {
     category: product.productType || "", status: product.status, active: product.status === "ACTIVE",
     tags: product.tags || [], totalInventory: product.totalInventory || 0,
     image: product.featuredImage?.url || "", imageAlt: product.featuredImage?.altText || "",
+    options: (product.options || []).map((option) => ({ id: option.id, name: option.name, values: option.values || [] })),
     variants: variants.map((variant) => ({
       id: String(variant.legacyResourceId), title: variant.title, sku: variant.sku || "", barcode: variant.barcode || "",
       price: variant.price, compareAtPrice: variant.compareAtPrice || "", inventoryQuantity: variant.inventoryQuantity,
@@ -296,6 +297,52 @@ export async function updateShopifyProduct(legacyId, fields) {
   if (!product) return null;
   const refreshedVariants = product.variants.pageInfo.hasNextPage ? await completeVariants(product) : product.variants.nodes;
   return normalizeProduct(product, refreshedVariants);
+}
+
+export async function createShopifyVariant(productLegacyId, input) {
+  const productId = `gid://shopify/Product/${productLegacyId}`;
+  const data = await graphql(`query AdminProductForVariant($id: ID!) { product(id: $id) { ${PRODUCT_FIELDS} } }`, { id: productId });
+  const product = data.product;
+  if (!product) return null;
+  const options = product.options || [];
+  if (!options.length || options.every((option) => option.name === "Title")) throw Object.assign(new Error("Este producto solo tiene la opción predeterminada. Configura primero sus opciones en Shopify."), { status: 409, code: "product_has_no_variant_options" });
+  const optionValues = options.map((option) => option.name === "Title" ? { name: "Title", value: "Default Title" } : input.optionValues.find((value) => value.name === option.name));
+  if (input.optionValues.length !== options.filter((option) => option.name !== "Title").length || optionValues.some((value) => !value?.value)) throw Object.assign(new Error("Debes indicar un valor para cada opción del producto."), { status: 422, code: "invalid_variant_options" });
+  const existingVariants = product.variants.pageInfo.hasNextPage ? await completeVariants(product) : product.variants.nodes;
+  const duplicate = existingVariants.some((variant) => options.every((option) => variant.selectedOptions.find((selected) => selected.name === option.name)?.value === optionValues.find((value) => value.name === option.name)?.value));
+  if (duplicate) throw Object.assign(new Error("Ya existe una variante con esa combinación de opciones."), { status: 409, code: "duplicate_variant" });
+  const result = await graphql(`mutation CreateAdminVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) { productVariantsBulkCreate(productId: $productId, variants: $variants) { product { id } productVariants { id } userErrors { field message } } }`, {
+    productId,
+    variants: [{
+      price: input.price,
+      compareAtPrice: input.compareAtPrice || null,
+      barcode: input.barcode || null,
+      inventoryItem: { sku: input.sku },
+      optionValues: optionValues.filter((option) => option.name !== "Title").map(({ name, value }) => ({ optionName: name, name: value }))
+    }]
+  });
+  userErrors(result, "productVariantsBulkCreate");
+  const refreshed = await graphql(`query AdminProductForVariant($id: ID!) { product(id: $id) { ${PRODUCT_FIELDS} } }`, { id: productId });
+  if (!refreshed.product) return null;
+  const variants = refreshed.product.variants.pageInfo.hasNextPage ? await completeVariants(refreshed.product) : refreshed.product.variants.nodes;
+  return normalizeProduct(refreshed.product, variants);
+}
+
+export async function deleteShopifyVariant(productLegacyId, variantLegacyId) {
+  const productId = `gid://shopify/Product/${productLegacyId}`;
+  const variantId = `gid://shopify/ProductVariant/${variantLegacyId}`;
+  const data = await graphql(`query AdminProductBeforeVariantDelete($id: ID!) { product(id: $id) { variants(first: 100) { nodes { id } pageInfo { hasNextPage endCursor } } } }`, { id: productId });
+  if (!data.product) return null;
+  const variants = [...data.product.variants.nodes];
+  if (data.product.variants.pageInfo.hasNextPage) throw Object.assign(new Error("Este producto tiene muchas variantes para borrar desde aquí."), { status: 409, code: "too_many_product_variants" });
+  if (!variants.some((variant) => variant.id === variantId)) return null;
+  if (variants.length <= 1) throw Object.assign(new Error("Shopify requiere que cada producto conserve al menos una variante."), { status: 409, code: "last_product_variant" });
+  const result = await graphql(`mutation DeleteAdminVariant($productId: ID!, $variantsIds: [ID!]!) { productVariantsBulkDelete(productId: $productId, variantsIds: $variantsIds) { product { id } userErrors { field message } } }`, { productId, variantsIds: [variantId] });
+  userErrors(result, "productVariantsBulkDelete");
+  const refreshed = await graphql(`query AdminProductAfterVariantDelete($id: ID!) { product(id: $id) { ${PRODUCT_FIELDS} } }`, { id: productId });
+  if (!refreshed.product) return null;
+  const remaining = refreshed.product.variants.pageInfo.hasNextPage ? await completeVariants(refreshed.product) : refreshed.product.variants.nodes;
+  return normalizeProduct(refreshed.product, remaining);
 }
 
 export async function adjustShopifyInventory(productId, variantId, locationId, delta) {

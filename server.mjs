@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { CURRENCY, getPublicCatalog, listAdminProducts, loadProductOverrides, paymentMode, priceCart, updateProduct } from "./server/catalog.mjs";
 import { createOrder, createRequest, findOrder, getUpload, listOrders, markEventProcessed, prepareStorage, saveUpload, updateOrder, UPLOAD_DIR } from "./server/storage.mjs";
 import { assertStripeReady, createCheckoutSession, retrieveCheckoutSession, verifyStripeSignature } from "./server/stripe.mjs";
-import { adjustShopifyInventory, cancelShopifyOrder, fulfillShopifyOrder, listShopifyOrders, listShopifyProducts, shopifyConfigured, updateShopifyOrder, updateShopifyProduct } from "./server/shopify.mjs";
+import { adjustShopifyInventory, cancelShopifyOrder, createShopifyVariant, deleteShopifyVariant, fulfillShopifyOrder, listShopifyOrders, listShopifyProducts, shopifyConfigured, updateShopifyOrder, updateShopifyProduct } from "./server/shopify.mjs";
 
 const ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)));
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
@@ -204,6 +204,23 @@ async function handleAdmin(request, response, url) {
   if (path === "/api/admin/products" && request.method === "GET") {
     if (shopifyConfigured()) return send(response, 200, { products: await listShopifyProducts(), mode: "shopify", source: "shopify" });
     return send(response, 200, { products: listAdminProducts(), mode: paymentMode(process.env), source: "local" });
+  }
+  const variantRoute = path.match(/^\/api\/admin\/products\/(\d{1,24})\/variants(?:\/(\d{1,24}))?$/);
+  if (variantRoute && request.method === "POST" && !variantRoute[2]) {
+    let body;
+    try { body = await readJson(request); }
+    catch (error) { return fail(response, error.status || 400, error.message, "invalid_request"); }
+    const price = Number(body.price);
+    const compareAtPrice = body.compareAtPrice === "" || body.compareAtPrice === null || body.compareAtPrice === undefined ? "" : Number(body.compareAtPrice);
+    if (!Number.isFinite(price) || price < 0 || price > 1_000_000 || (compareAtPrice !== "" && (!Number.isFinite(compareAtPrice) || compareAtPrice < 0 || compareAtPrice > 1_000_000))) return fail(response, 422, "Revisa el precio de la variante.", "invalid_variant_price");
+    if (typeof body.sku !== "string" || body.sku.length > 100 || typeof body.barcode !== "string" || body.barcode.length > 100) return fail(response, 422, "El SKU y el código de barras no pueden superar 100 caracteres.", "invalid_variant_reference");
+    if (!Array.isArray(body.optionValues) || body.optionValues.length < 1 || body.optionValues.length > 3 || body.optionValues.some((option) => !option || typeof option.name !== "string" || !option.name.trim() || typeof option.value !== "string" || !option.value.trim())) return fail(response, 422, "Indica valores válidos para las opciones de la variante.", "invalid_variant_options");
+    const product = await createShopifyVariant(variantRoute[1], { price: price.toFixed(2), compareAtPrice: compareAtPrice === "" ? "" : compareAtPrice.toFixed(2), sku: body.sku.trim(), barcode: body.barcode.trim(), optionValues: body.optionValues.map(({ name, value }) => ({ name: cleanText(name, 255), value: cleanText(value, 255) })) });
+    return product ? send(response, 200, { product }) : fail(response, 404, "No encontramos ese producto en Shopify.", "product_not_found");
+  }
+  if (variantRoute && request.method === "DELETE" && variantRoute[2]) {
+    const product = await deleteShopifyVariant(variantRoute[1], variantRoute[2]);
+    return product ? send(response, 200, { product }) : fail(response, 404, "No encontramos esa variante en el producto indicado.", "variant_not_found");
   }
   const inventoryMatch = path.match(/^\/api\/admin\/products\/(\d{1,24})\/inventory$/);
   if (inventoryMatch && request.method === "POST") {
